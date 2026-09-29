@@ -16,9 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static assets if running locally
-const distDir = path.join(__dirname, '../dist');
-if (fs.existsSync(distDir)) app.use(express.static(distDir));
+// Frontend static serving is handled by Vercel directly
 
 // ─── HELPER SUPABASE STORAGE ───────────────────────────────────────────────
 async function uploadToSupabaseStorage(file, folderPath) {
@@ -314,10 +312,7 @@ app.get('/api/search', async (req, res) => {
   res.json({ success: true, data: { catalogs, models: models || [], photos } });
 });
 
-// SPA fallback untuk Vite React
-if (fs.existsSync(distDir)) {
-  app.get('*', (req, res) => res.sendFile(path.join(distDir, 'index.html')));
-}
+// Vercel routes all non-api requests to index.html natively.
 
 // Hanya jalankan app.listen jika TIDAK sedang di Vercel
 if (process.env.NODE_ENV !== 'production') {
