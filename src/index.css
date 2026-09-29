@@ -14,30 +14,19 @@
   }
 
   body {
-    @apply bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen pb-24 sm:pb-10 selection:bg-[#d96b27] selection:text-white;
+    @apply bg-slate-50 text-slate-800 font-sans min-h-screen pb-24 sm:pb-10 selection:bg-[#d96b27] selection:text-white;
     letter-spacing: -0.011em;
   }
 
-  /* User requirement: Dark mode borders and dividers strictly #444444 */
-  .dark {
-    --tw-border-opacity: 1;
-    border-color: #444444;
+  /* Monochromatic Minimalism Dark Mode: #121212 bg, #E0E0E0 text */
+  .dark body {
+    background-color: #121212;
+    color: #E0E0E0;
   }
 
-  .dark .border,
-  .dark .border-t,
-  .dark .border-b,
-  .dark .border-l,
-  .dark .border-r,
-  .dark .border-slate-800,
-  .dark .border-slate-700,
-  .dark .border-slate-200,
+  /* All borders and dividers in dark mode → #444444 */
+  .dark *,
   .dark hr {
-    border-color: #444444;
-  }
-
-  .dark .divide-y > :not([hidden]) ~ :not([hidden]),
-  .dark .divide-x > :not([hidden]) ~ :not([hidden]) {
     border-color: #444444;
   }
 }
@@ -48,7 +37,7 @@
   scrollbar-color: #cbd5e1 #f8fafc;
 }
 .dark .excel-scroll {
-  scrollbar-color: #444444 #0f172a;
+  scrollbar-color: #444444 #121212;
 }
 .excel-scroll::-webkit-scrollbar {
   width: 6px;
@@ -58,7 +47,7 @@
   background: #f8fafc;
 }
 .dark .excel-scroll::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #121212;
 }
 .excel-scroll::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;

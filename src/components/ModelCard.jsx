@@ -6,10 +6,10 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
   const { canEdit } = useAuth();
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+    <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
       <div>
         {/* Image Preview Container */}
-        <div className="relative aspect-4/3 bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <div className="relative aspect-4/3 bg-slate-100 dark:bg-[#2A2A2A] overflow-hidden">
           <img
             src={model.photo_url}
             alt={model.title}
@@ -39,7 +39,7 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
         {/* Card Content Body */}
         <div className="p-3.5">
           <div className="flex items-start justify-between">
-            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-[#E0E0E0] leading-snug">
               {model.title}
             </h3>
             {canEdit && (
@@ -55,8 +55,8 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
 
           {/* Simple Notes */}
           {model.notes && (
-            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-[#444444]">
+              <p className="text-xs text-slate-600 dark:text-[#B0B0B0] whitespace-pre-line leading-relaxed">
                 {model.notes}
               </p>
             </div>

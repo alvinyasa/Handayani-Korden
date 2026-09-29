@@ -18,7 +18,17 @@ export default {
           800: '#9a3412',
           900: '#7c2d12',
         },
-        darkborder: '#444444',
+        // Monochromatic Minimalism Dark Mode Palette
+        dark: {
+          bg: '#121212',
+          card: '#1E1E1E',
+          input: '#2A2A2A',
+          hover: '#333333',
+          border: '#444444',
+          muted: '#888888',
+          secondary: '#B0B0B0',
+          text: '#E0E0E0',
+        },
       },
       borderColor: {
         dark: '#444444',
