@@ -1,16 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, UserCheck, LogOut } from 'lucide-react';
+import { ShieldCheck, UserCheck, LogOut, Sun, Moon } from 'lucide-react';
 
 export default function Navbar({ onNavigateToAdmin, onLogout }) {
   const { isAdmin } = useAuth();
 
+  // Dark mode state
+  const [isDark, setIsDark] = useState(() => {
+    return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDark;
+    setIsDark(nextDark);
+    if (nextDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-[#444444] shadow-xs transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-3.5 sm:px-5 py-2.5 flex items-center justify-between">
         {/* Brand Logo & Name */}
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-xs p-1 flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100 dark:ring-slate-800/60">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-[#444444] shadow-xs p-1 flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-slate-100 dark:ring-slate-800/60">
             <img
               src="/logo.png"
               alt="Handayani Korden"
@@ -19,7 +44,7 @@ export default function Navbar({ onNavigateToAdmin, onLogout }) {
           </div>
           <div>
             <div className="flex items-center space-x-1.5">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white leading-none">
+              <span className="font-extrabold text-sm sm:text-base tracking-normal text-slate-900 dark:text-white leading-tight">
                 HANDAYANI KORDEN
               </span>
             </div>
@@ -31,12 +56,26 @@ export default function Navbar({ onNavigateToAdmin, onLogout }) {
 
         {/* Right Actions */}
         <div className="flex items-center space-x-2">
+          {/* Fitur Dark Mode / Light Mode (Di Samping Kiri Admin / Teknisi) */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl border border-slate-200 dark:border-[#444444] bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-all active-press shadow-xs"
+            title={isDark ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+            aria-label="Toggle Dark/Light Mode"
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-600" />
+            )}
+          </button>
+
           {/* User Role Status Badge */}
           {isAdmin ? (
             <div className="flex items-center space-x-1.5">
               <button
                 onClick={onNavigateToAdmin}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-orange-200/80 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 text-xs font-bold active-press shadow-xs"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-orange-200/80 dark:border-[#444444] bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 text-xs font-bold active-press shadow-xs"
                 title="Panel Admin"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
@@ -44,14 +83,14 @@ export default function Navbar({ onNavigateToAdmin, onLogout }) {
               </button>
               <button
                 onClick={onLogout}
-                className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/60 active-press transition-colors"
+                className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-[#444444] active-press transition-colors"
                 title="Logout Admin"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-xs">
+            <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#444444] bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-xs">
               <UserCheck className="w-3.5 h-3.5 text-slate-400 dark:text-slate-400" />
               <span>Teknisi</span>
             </div>

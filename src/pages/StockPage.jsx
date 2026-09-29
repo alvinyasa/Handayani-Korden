@@ -39,17 +39,17 @@ export default function StockPage({
   return (
     <div className="space-y-3 pb-4">
       {/* Top Title Bar */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Ketersediaan Stok Kain</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Katalog kain, motif & nomor seri warna</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-normal">Ketersediaan Stok Kain</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Katalog kain, motif & nomor seri warna</p>
         </div>
 
-        <div className="flex items-center space-x-1.5">
+        <div className="shrink-0 flex items-center space-x-1.5">
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-xs active-press disabled:opacity-50 transition-colors"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-[#444444] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-xs active-press disabled:opacity-50 transition-colors"
             title="Segarkan Data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#d96b27]' : ''}`} />

@@ -46,16 +46,16 @@ export default function InstallationsPage({
   return (
     <div className="space-y-4 pb-4">
       {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Foto Pemasangan</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Katalog foto hasil pemasangan korden di lapangan</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-normal">Foto Pemasangan</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Katalog foto hasil pemasangan korden di lapangan</p>
         </div>
 
         {canEdit && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-3.5 py-2 bg-[#d96b27] hover:bg-[#c25a1d] text-white rounded-xl font-bold text-xs shadow-md shadow-orange-600/20 flex items-center space-x-1.5 active-press transition-colors"
+            className="shrink-0 whitespace-nowrap px-3.5 py-2 bg-[#d96b27] hover:bg-[#c25a1d] text-white rounded-xl font-bold text-xs shadow-md shadow-orange-600/20 flex items-center space-x-1.5 active-press transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Foto</span>

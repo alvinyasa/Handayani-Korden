@@ -18,9 +18,13 @@ export default {
           800: '#9a3412',
           900: '#7c2d12',
         },
+        darkborder: '#444444',
+      },
+      borderColor: {
+        dark: '#444444',
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       }
     },
   },
