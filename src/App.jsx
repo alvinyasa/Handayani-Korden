@@ -358,7 +358,7 @@ function AppContent() {
   // Dedicated /admin view
   if (route === 'admin') {
     return (
-      <div className="min-h-screen bg-slate-100 font-sans">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200">
         <AdminLoginPage
           onNavigateToApp={(targetTab) => {
             navigateTo('app', targetTab);
@@ -386,7 +386,7 @@ function AppContent() {
 
   // Regular Mobile App View (Teknisi / Admin logged-in view)
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       {/* Top Navbar */}
       <Navbar
         onNavigateToAdmin={() => navigateTo('admin')}

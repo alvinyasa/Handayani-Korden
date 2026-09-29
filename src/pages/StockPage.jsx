@@ -41,15 +41,15 @@ export default function StockPage({
       {/* Top Title Bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-black text-slate-900 tracking-tight">Ketersediaan Stok Kain</h1>
-          <p className="text-xs text-slate-500">Katalog kain, motif & nomor seri warna</p>
+          <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Ketersediaan Stok Kain</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Katalog kain, motif & nomor seri warna</p>
         </div>
 
         <div className="flex items-center space-x-1.5">
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 shadow-xs active-press disabled:opacity-50"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shadow-xs active-press disabled:opacity-50 transition-colors"
             title="Segarkan Data"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#d96b27]' : ''}`} />

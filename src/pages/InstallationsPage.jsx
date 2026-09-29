@@ -45,17 +45,17 @@ export default function InstallationsPage({
 
   return (
     <div className="space-y-4 pb-4">
-      {/* Top Header (Matching ModelsPage UI) */}
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-black text-slate-900 tracking-tight">Foto Pemasangan</h1>
-          <p className="text-xs text-slate-500">Katalog foto hasil pemasangan korden di lapangan</p>
+          <h1 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Foto Pemasangan</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Katalog foto hasil pemasangan korden di lapangan</p>
         </div>
 
         {canEdit && (
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-3.5 py-2 bg-[#d96b27] hover:bg-[#c25a1d] active:bg-[#a84c16] text-white rounded-xl font-bold text-xs shadow-md shadow-orange-600/20 flex items-center space-x-1.5 active-press"
+            className="px-3.5 py-2 bg-[#d96b27] hover:bg-[#c25a1d] text-white rounded-xl font-bold text-xs shadow-md shadow-orange-600/20 flex items-center space-x-1.5 active-press transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Foto</span>
@@ -63,20 +63,20 @@ export default function InstallationsPage({
         )}
       </div>
 
-      {/* Search Filter Box (Identical to ModelsPage Search) */}
+      {/* Search Filter Box */}
       <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Cari foto pemasangan (misal: Katalog Arona, Ruang Tamu, Minimalis...)"
-          className="w-full text-xs pl-10 pr-8 py-2.5 rounded-full border border-slate-200 bg-white focus:ring-2 focus:ring-[#d96b27] focus:outline-none font-medium shadow-xs"
+          placeholder="Cari foto pemasangan (misal: Arona, Ruang Tamu, Villa...)"
+          className="w-full text-xs pl-10 pr-8 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none font-medium shadow-xs transition-all"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -85,13 +85,13 @@ export default function InstallationsPage({
 
       {/* Catalog Filter Chips */}
       {catalogNames.length > 0 && (
-        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+        <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
           <button
             onClick={() => setSelectedCatalogFilter('Semua')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active-press ${
               selectedCatalogFilter === 'Semua'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                ? 'bg-[#d96b27] text-white shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             Semua ({installationPhotos.length})
@@ -103,10 +103,10 @@ export default function InstallationsPage({
               <button
                 key={catName}
                 onClick={() => setSelectedCatalogFilter(catName)}
-                className={`px-3 py-1.5 rounded-xl font-semibold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 active-press ${
                   isSelected
-                    ? 'bg-[#d96b27] text-white shadow-xs font-bold'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-[#d96b27] text-white shadow-xs'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 {catName} ({count})
@@ -116,27 +116,54 @@ export default function InstallationsPage({
         </div>
       )}
 
-      {/* Photo Cards Grid (Identical Grid to ModelsPage) */}
-      {filteredPhotos.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+      {/* Loading Skeleton */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden animate-pulse">
+              <div className="aspect-4/3 bg-slate-200 dark:bg-slate-800" />
+              <div className="p-3.5 space-y-2">
+                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-2/3" />
+                <div className="h-3 bg-slate-100 dark:bg-slate-800/60 rounded w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredPhotos.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
           {filteredPhotos.map((photo) => (
             <InstallationCard
               key={photo.id}
               photo={photo}
               onDelete={onDeleteInstallation}
-              onPreviewImage={(p) => setPreviewImage(p)}
+              onPreviewImage={(p) => setPreviewImage(p.photo_url)}
             />
           ))}
         </div>
       ) : (
-        <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 text-xs">
-          <ImageIcon className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-          <span className="font-semibold text-slate-600 block text-sm">Tidak ada foto pemasangan</span>
-          <span className="mt-1 block">Silakan ubah kata kunci pencarian atau tambah foto pemasangan baru.</span>
+        <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+          <div className="w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-950/50 text-[#d96b27] dark:text-orange-400 flex items-center justify-center mx-auto mb-3 border border-orange-200/60 dark:border-orange-900/50">
+            <ImageIcon className="w-7 h-7" />
+          </div>
+          <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-base">Belum Ada Foto Pemasangan</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-sm mx-auto">
+            {searchQuery || selectedCatalogFilter !== 'Semua'
+              ? 'Tidak ada foto yang cocok dengan pencarian atau filter yang dipilih.'
+              : 'Dokumentasikan hasil pemasangan gorden di lapangan agar customer bisa melihat contoh aslinya.'}
+          </p>
+          {canEdit && !searchQuery && selectedCatalogFilter === 'Semua' && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="mt-4 px-4 py-2.5 bg-[#d96b27] hover:bg-[#c25a1d] text-white rounded-xl text-xs font-bold shadow-md shadow-orange-600/20 inline-flex items-center space-x-1.5 active-press transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Foto Pertama</span>
+            </button>
+          )}
         </div>
       )}
 
-      {/* Modal: Add Installation Photo */}
+      {/* Add Installation Modal */}
       {showAddModal && (
         <AddInstallationModal
           existingCatalogs={catalogNames}
@@ -145,37 +172,24 @@ export default function InstallationsPage({
         />
       )}
 
-      {/* Lightbox Preview Modal */}
+      {/* Lightbox Modal */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-60 bg-black/90 flex flex-col items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
           onClick={() => setPreviewImage(null)}
         >
-          <button
-            onClick={() => setPreviewImage(null)}
-            className="absolute top-4 right-4 text-white p-2 rounded-full bg-white/20 hover:bg-white/30"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img
-            src={previewImage.photo_url}
-            alt={previewImage.caption || previewImage.catalog_name || 'Foto Pemasangan'}
-            className="max-w-full max-h-[75vh] rounded-2xl object-contain shadow-2xl"
-          />
-          <div className="mt-3 max-w-md text-center bg-slate-900/90 text-white p-3.5 rounded-2xl border border-white/10">
-            <h3 className="font-extrabold text-sm uppercase tracking-wide text-orange-400">
-              Katalog {previewImage.catalog_name}
-            </h3>
-            {previewImage.room_type && (
-              <p className="text-xs text-emerald-400 font-semibold mt-0.5">
-                {previewImage.room_type}
-              </p>
-            )}
-            {previewImage.caption && (
-              <p className="text-xs text-slate-300 mt-2 whitespace-pre-line text-left leading-relaxed">
-                {previewImage.caption}
-              </p>
-            )}
+          <div className="relative max-w-3xl w-full">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            />
           </div>
         </div>
       )}

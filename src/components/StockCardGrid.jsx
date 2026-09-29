@@ -109,18 +109,18 @@ export default function StockCardGrid({
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
         {/* Search Bar Input */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari katalog (misal: Maroko, Berlin, Hawai, Arona 2) atau nomor seri..."
-            className="w-full text-xs pl-10 pr-8 py-2.5 rounded-full border border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#d96b27] shadow-xs font-medium"
+            placeholder="Cari katalog (misal: Maroko, Berlin, Arona) atau nomor seri..."
+            className="w-full text-xs pl-10 pr-8 py-2.5 rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#d96b27] shadow-xs font-medium transition-all"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -134,8 +134,8 @@ export default function StockCardGrid({
             onClick={() => setStatusFilter('Semua')}
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
               statusFilter === 'Semua'
-                ? 'bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10'
-                : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
             }`}
           >
             <span>Semua</span>
@@ -148,10 +148,10 @@ export default function StockCardGrid({
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
               statusFilter === 'Ready'
                 ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20'
-                : 'bg-white text-emerald-700 border border-emerald-500/70 hover:bg-emerald-50'
+                : 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 border border-emerald-500/50 dark:border-emerald-600/40 hover:bg-emerald-50 dark:hover:bg-slate-800'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Ready</span>
             <span className="font-mono ml-0.5 font-extrabold">{totalReady}</span>
           </button>
@@ -162,10 +162,10 @@ export default function StockCardGrid({
             className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
               statusFilter === 'Kosong'
                 ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/20'
-                : 'bg-white text-rose-600 border border-rose-400/80 hover:bg-rose-50'
+                : 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border border-rose-400/60 dark:border-rose-600/40 hover:bg-rose-50 dark:hover:bg-slate-800'
             }`}
           >
-            <XCircle className="w-3.5 h-3.5 text-rose-500" />
+            <XCircle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
             <span>Kosong</span>
             <span className="font-mono ml-0.5 font-extrabold">{totalKosong}</span>
           </button>
@@ -174,8 +174,8 @@ export default function StockCardGrid({
 
       {/* 2. Horizontal Catalog Filter Chips */}
       <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs">
-        <div className="flex items-center space-x-1 text-slate-500 font-bold px-1 shrink-0">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+        <div className="flex items-center space-x-1 text-slate-500 dark:text-slate-400 font-bold px-1 shrink-0">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
           <span>Katalog:</span>
         </div>
 
@@ -185,7 +185,7 @@ export default function StockCardGrid({
           className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press ${
             selectedCatalogFilter === 'Semua'
               ? 'bg-[#d96b27] text-white shadow-sm'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
           }`}
         >
           Semua
@@ -201,7 +201,7 @@ export default function StockCardGrid({
               className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press ${
                 isActive
                   ? 'bg-[#d96b27] text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
               {cat.name}
@@ -213,7 +213,7 @@ export default function StockCardGrid({
         {canEdit && (
           <button
             onClick={onOpenAddCatalog}
-            className="px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center space-x-1 active-press"
+            className="px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 flex items-center space-x-1 active-press"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>+ Katalog Baru</span>
@@ -252,7 +252,7 @@ export default function StockCardGrid({
           return (
             <div
               key={catalog.id}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden flex flex-col hover:shadow-md transition-all"
             >
               {/* Card Header (Terracotta Orange) */}
               <div className="bg-[#d96b27] px-3.5 py-2.5 text-white flex items-center justify-between">
@@ -292,25 +292,25 @@ export default function StockCardGrid({
               </div>
 
               {/* Card Body - Table Grid */}
-              <div className="flex-1 bg-white">
+              <div className="flex-1 bg-white dark:bg-slate-900">
                 {motifPairs.map((pair, pairIdx) => {
                   const motifA = pair[0];
                   const motifB = pair[1];
 
                   return (
                     <div key={pairIdx} className="w-full">
-                      {/* Sub-header Row (Light Beige Background) */}
-                      <div className="grid grid-cols-4 bg-[#faecd8] text-slate-800 text-xs font-bold text-center border-b border-slate-200 py-1.5 px-2">
-                        <div className="font-mono text-slate-900">{motifA?.code || '-'}</div>
-                        <div className="text-[11px] font-semibold text-slate-600">status</div>
-                        <div className="font-mono text-slate-900">{motifB ? motifB.code : ''}</div>
-                        <div className="text-[11px] font-semibold text-slate-600">
+                      {/* Sub-header Row (Warm Amber Background) */}
+                      <div className="grid grid-cols-4 bg-[#faecd8] dark:bg-amber-950/40 text-slate-800 dark:text-amber-200 text-xs font-bold text-center border-b border-slate-200 dark:border-slate-800 py-1.5 px-2">
+                        <div className="font-mono text-slate-900 dark:text-white">{motifA?.code || '-'}</div>
+                        <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">status</div>
+                        <div className="font-mono text-slate-900 dark:text-white">{motifB ? motifB.code : ''}</div>
+                        <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">
                           {motifB ? 'status' : ''}
                         </div>
                       </div>
 
                       {/* Rows for each color index */}
-                      <div className="divide-y divide-slate-100">
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
                         {colors.map((color) => {
                           const itemA = motifA ? matrix[motifA.id]?.[color.id] : null;
                           const isReadyA = itemA ? Number(itemA.is_ready) === 1 : false;
@@ -321,7 +321,7 @@ export default function StockCardGrid({
                           return (
                             <div
                               key={color.id}
-                              className="grid grid-cols-4 items-center py-1.5 px-2 text-center text-xs hover:bg-slate-50/70 transition-colors"
+                              className="grid grid-cols-4 items-center py-1.5 px-2 text-center text-xs hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors"
                             >
                               {/* Motif A: Color Number */}
                               <div
@@ -333,7 +333,7 @@ export default function StockCardGrid({
                                     item: itemA,
                                   })
                                 }
-                                className="font-extrabold text-slate-800 font-mono text-xs cursor-pointer hover:text-[#d96b27]"
+                                className="font-extrabold text-slate-800 dark:text-slate-200 font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
                               >
                                 {color.code}
                               </div>
@@ -370,7 +370,7 @@ export default function StockCardGrid({
                                         item: itemB,
                                       })
                                     }
-                                    className="font-extrabold text-slate-800 font-mono text-xs cursor-pointer hover:text-[#d96b27]"
+                                    className="font-extrabold text-slate-800 dark:text-slate-200 font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
                                   >
                                     {color.code}
                                   </div>
@@ -411,10 +411,10 @@ export default function StockCardGrid({
 
                 {/* Quick Add Motif / Color Row for Admin */}
                 {canEdit && (
-                  <div className="p-2 bg-slate-50 border-t border-slate-100 flex items-center justify-center">
+                  <div className="p-2 bg-slate-50 dark:bg-slate-850 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center">
                     <button
                       onClick={() => onEditCatalog(catalog)}
-                      className="w-full py-1.5 px-3 rounded-xl border border-dashed border-[#d96b27]/40 text-[#d96b27] hover:bg-[#d96b27]/10 text-xs font-bold flex items-center justify-center space-x-1 transition-colors"
+                      className="w-full py-1.5 px-3 rounded-xl border border-dashed border-[#d96b27]/40 text-[#d96b27] dark:text-orange-400 hover:bg-[#d96b27]/10 text-xs font-bold flex items-center justify-center space-x-1 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Edit Tabel / Tambah Kode & Warna</span>
@@ -424,10 +424,10 @@ export default function StockCardGrid({
               </div>
 
               {/* Card Footer (Last Update Date only) */}
-              <div className="bg-slate-50 border-t border-slate-200 px-3 py-2 text-[10px] text-slate-500 flex items-center justify-end font-medium">
+              <div className="bg-slate-50/80 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-end font-medium">
                 <div className="flex items-center space-x-1 shrink-0">
-                  <span className="text-slate-400">Update:</span>
-                  <span className="font-mono text-slate-600">
+                  <span className="text-slate-400 dark:text-slate-500">Update:</span>
+                  <span className="font-mono text-slate-600 dark:text-slate-300">
                     {catalog.last_updated_date || '2026-08-26'}
                   </span>
                 </div>
@@ -438,9 +438,9 @@ export default function StockCardGrid({
       </div>
 
       {filteredCatalogs.length === 0 && (
-        <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 text-xs">
-          <Layers className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-          <span className="font-semibold text-slate-700 block text-sm">Tidak ada katalog kain yang cocok</span>
+        <div className="p-10 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-xs shadow-xs">
+          <Layers className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+          <span className="font-bold text-slate-700 dark:text-slate-200 block text-sm">Tidak ada katalog kain yang cocok</span>
           <span className="mt-1 block">Silakan sesuaikan kata kunci pencarian atau filter katalog.</span>
         </div>
       )}

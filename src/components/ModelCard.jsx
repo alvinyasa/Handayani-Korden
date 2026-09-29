@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, Maximize2, ChevronDown, ChevronUp, Tag } from 'lucide-react';
+import { Trash2, Maximize2, Tag } from 'lucide-react';
 
 export default function ModelCard({ model, onDelete, onPreviewImage }) {
   const { canEdit } = useAuth();
-  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
       <div>
         {/* Image Preview Container */}
-        <div className="relative aspect-4/3 bg-slate-100 overflow-hidden group">
+        <div className="relative aspect-4/3 bg-slate-100 dark:bg-slate-800 overflow-hidden">
           <img
             src={model.photo_url}
             alt={model.title}
@@ -20,7 +19,7 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
           {/* Category Tag Overlay */}
           {model.category && (
             <div className="absolute top-2.5 left-2.5">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-white font-bold text-[10px] tracking-wide border border-white/20 flex items-center space-x-1">
+              <span className="px-2.5 py-1 rounded-lg bg-slate-900/85 backdrop-blur-md text-white font-bold text-[10px] tracking-wide border border-white/20 flex items-center space-x-1 shadow-xs">
                 <Tag className="w-3 h-3 text-orange-400" />
                 <span>{model.category}</span>
               </span>
@@ -40,13 +39,13 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
         {/* Card Content Body */}
         <div className="p-3.5">
           <div className="flex items-start justify-between">
-            <h3 className="font-extrabold text-sm text-slate-900 leading-snug">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white leading-snug">
               {model.title}
             </h3>
             {canEdit && (
               <button
                 onClick={() => onDelete(model.id, model.title)}
-                className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition-colors shrink-0 ml-2 active-press"
+                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded-lg transition-colors shrink-0 ml-2 active-press"
                 title="Hapus Model"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -56,24 +55,10 @@ export default function ModelCard({ model, onDelete, onPreviewImage }) {
 
           {/* Simple Notes */}
           {model.notes && (
-            <div className="mt-2 pt-2 border-t border-slate-100">
-              <div className="text-xs text-slate-600 whitespace-pre-line leading-relaxed">
-                {isExpanded ? (
-                  model.notes
-                ) : (
-                  <div className="line-clamp-2">{model.notes}</div>
-                )}
-              </div>
-
-              {model.notes.length > 70 && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="mt-1.5 text-[11px] font-bold text-[#d96b27] hover:underline flex items-center space-x-0.5 active-press"
-                >
-                  <span>{isExpanded ? 'Sembunyikan' : 'Baca Selengkapnya'}</span>
-                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
-              )}
+            <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                {model.notes}
+              </p>
             </div>
           )}
         </div>
