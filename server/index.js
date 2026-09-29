@@ -3,9 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import db from './db.js';
+import { supabase } from './supabase.js';
 import { upload } from './upload.js';
-import { runSeed } from './seed.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,415 +16,313 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static uploads serving
-const uploadsDir = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsDir));
-
-// Static frontend serving if built
+// Serve static assets if running locally
 const distDir = path.join(__dirname, '../dist');
-if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
+if (fs.existsSync(distDir)) app.use(express.static(distDir));
+
+// ─── HELPER SUPABASE STORAGE ───────────────────────────────────────────────
+async function uploadToSupabaseStorage(file, folderPath) {
+  if (!file) return null;
+  const fileExt = file.originalname.split('.').pop();
+  const fileName = `${folderPath}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from('uploads')
+    .upload(fileName, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Storage Upload Error:', error);
+    throw new Error('Gagal upload gambar ke Supabase');
+  }
+
+  const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
+  return data.publicUrl;
 }
 
-// Run initial seed if db is fresh
-runSeed();
+// ─── HELPERS DATABASE ──────────────────────────────────────────────────────
+async function getCatalogFull(catalogId) {
+  const { data: catalog, error } = await supabase
+    .from('catalogs').select('*').eq('id', catalogId).single();
+  if (!catalog || error) return null;
+
+  const [{ data: motifs }, { data: colors }, { data: stockItems }, { data: photos }] =
+    await Promise.all([
+      supabase.from('motifs').select('*').eq('catalog_id', catalogId).order('code'),
+      supabase.from('colors').select('*').eq('catalog_id', catalogId).order('code'),
+      supabase.from('stock_items').select('*').eq('catalog_id', catalogId),
+      supabase.from('installation_photos').select('*').eq('catalog_id', catalogId),
+    ]);
+
+  const safeMotifs = motifs || [];
+  const safeColors = colors || [];
+  const safeStock = stockItems || [];
+
+  const matrix = {};
+  for (const m of safeMotifs) {
+    matrix[m.id] = {};
+    for (const c of safeColors) {
+      const item = safeStock.find(
+        s => Number(s.motif_id) === Number(m.id) && Number(s.color_id) === Number(c.id)
+      );
+      matrix[m.id][c.id] = item || {
+        id: null, catalog_id: Number(catalogId),
+        motif_id: m.id, color_id: c.id, is_ready: 0, notes: '',
+      };
+    }
+  }
+
+  return {
+    ...catalog,
+    motifs: safeMotifs,
+    colors: safeColors,
+    stockMatrix: matrix,
+    photosCount: (photos || []).length,
+  };
+}
+
+async function getAllCatalogsFull() {
+  const { data: catalogs } = await supabase.from('catalogs').select('*').order('name');
+  if (!catalogs) return [];
+  return Promise.all(catalogs.map(c => getCatalogFull(c.id)));
+}
+
+async function getInstallationPhotos(filter = {}) {
+  let query = supabase.from('installation_photos').select('*');
+  if (filter.catalog_id) query = query.eq('catalog_id', Number(filter.catalog_id));
+  if (filter.search) {
+    const s = `%${filter.search}%`;
+    query = query.or(`caption.ilike.${s},room_type.ilike.${s},catalog_name.ilike.${s}`);
+  }
+  const { data: photos } = await query.order('created_at', { ascending: false });
+  return (photos || []).map(p => ({ ...p, catalog_name: p.catalog_name || 'Umum' }));
+}
 
 // ==========================================
 // 1. AUTH & USERS
 // ==========================================
-app.get('/api/auth/users', (req, res) => {
-  const users = db.find('users').map(({ password, pin, ...u }) => u);
-  res.json({ success: true, data: users });
+app.get('/api/auth/users', async (req, res) => {
+  const { data } = await supabase.from('users').select('id, username, name, role, phone, created_at');
+  res.json({ success: true, data: data || [] });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ success: false, message: 'Username dan sandi wajib diisi' });
 
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: 'Username dan sandi wajib diisi' });
-  }
-
-  const user = db.find('users', (u) => u.username.toLowerCase() === username.trim().toLowerCase())[0];
-
-  if (!user) {
-    return res.status(404).json({ success: false, message: 'Akun admin tidak ditemukan' });
-  }
-
-  const validPassword = user.password || user.pin;
-  if (password !== validPassword) {
-    return res.status(401).json({ success: false, message: 'Sandi yang Anda masukkan salah' });
-  }
+  const { data: users } = await supabase.from('users').select('*').ilike('username', username.trim()).limit(1);
+  const user = users?.[0];
+  if (!user) return res.status(404).json({ success: false, message: 'Akun admin tidak ditemukan' });
+  if (password !== (user.password || user.pin)) return res.status(401).json({ success: false, message: 'Sandi yang Anda masukkan salah' });
 
   const { password: _, pin: __, ...safeUser } = user;
-  res.json({ success: true, user: safeUser, message: 'Berhasil masuk sebagai Admin (SPV / Kepala Toko)' });
+  res.json({ success: true, user: safeUser, message: 'Berhasil masuk' });
 });
 
 // ==========================================
 // 2. DASHBOARD STATS
 // ==========================================
-app.get('/api/stats', (req, res) => {
-  const catalogs = db.find('catalogs');
-  const motifs = db.find('motifs');
-  const colors = db.find('colors');
-  const stockItems = db.find('stock_items');
-  const models = db.find('curtain_models');
-  const photos = db.find('installation_photos');
-
-  const readyCount = stockItems.filter((s) => Number(s.is_ready) === 1).length;
-  const emptyCount = stockItems.filter((s) => Number(s.is_ready) === 0).length;
+app.get('/api/stats', async (req, res) => {
+  const [
+    { count: totalCatalogs }, { count: totalMotifs }, { count: totalColors },
+    { count: totalStockVariants }, { count: readyVariants }, { count: emptyVariants },
+    { count: totalModels }, { count: totalInstallationPhotos },
+  ] = await Promise.all([
+    supabase.from('catalogs').select('*', { count: 'exact', head: true }),
+    supabase.from('motifs').select('*', { count: 'exact', head: true }),
+    supabase.from('colors').select('*', { count: 'exact', head: true }),
+    supabase.from('stock_items').select('*', { count: 'exact', head: true }),
+    supabase.from('stock_items').select('*', { count: 'exact', head: true }).eq('is_ready', 1),
+    supabase.from('stock_items').select('*', { count: 'exact', head: true }).eq('is_ready', 0),
+    supabase.from('curtain_models').select('*', { count: 'exact', head: true }),
+    supabase.from('installation_photos').select('*', { count: 'exact', head: true }),
+  ]);
 
   res.json({
     success: true,
-    data: {
-      totalCatalogs: catalogs.length,
-      totalMotifs: motifs.length,
-      totalColors: colors.length,
-      totalStockVariants: stockItems.length,
-      readyVariants: readyCount,
-      emptyVariants: emptyCount,
-      totalModels: models.length,
-      totalInstallationPhotos: photos.length,
-    },
+    data: { totalCatalogs, totalMotifs, totalColors, totalStockVariants, readyVariants, emptyVariants, totalModels, totalInstallationPhotos },
   });
 });
 
 // ==========================================
 // 3. CATALOGS & STOCK MATRIX
 // ==========================================
-app.get('/api/catalogs', (req, res) => {
-  const catalogs = db.getAllCatalogsFull();
-  res.json({ success: true, data: catalogs });
+app.get('/api/catalogs', async (req, res) => {
+  res.json({ success: true, data: await getAllCatalogsFull() });
 });
 
-app.get('/api/catalogs/:id', (req, res) => {
-  const catalog = db.getCatalogFull(req.params.id);
+app.get('/api/catalogs/:id', async (req, res) => {
+  const catalog = await getCatalogFull(req.params.id);
   if (!catalog) return res.status(404).json({ success: false, message: 'Katalog tidak ditemukan' });
   res.json({ success: true, data: catalog });
 });
 
-app.post('/api/catalogs', upload.single('image'), (req, res) => {
+app.post('/api/catalogs', upload.single('image'), async (req, res) => {
   const { name, description } = req.body;
   if (!name) return res.status(400).json({ success: false, message: 'Nama katalog wajib diisi' });
 
-  const existing = db.find('catalogs', (c) => c.name.toLowerCase() === name.trim().toLowerCase())[0];
-  if (existing) {
-    return res.status(400).json({ success: false, message: 'Katalog dengan nama tersebut sudah ada' });
+  try {
+    const imageUrl = req.file ? await uploadToSupabaseStorage(req.file, 'catalogs') : null;
+    const { data: newCat, error } = await supabase
+      .from('catalogs').insert({ name: name.trim(), description: description || '', image_url: imageUrl })
+      .select().single();
+    if (error) return res.status(500).json({ success: false, message: error.message });
+
+    const { data: newMotif } = await supabase.from('motifs').insert({ catalog_id: newCat.id, code: 'A', name: 'Motif A' }).select().single();
+    const { data: newColor } = await supabase.from('colors').insert({ catalog_id: newCat.id, code: '1', name: 'Warna 1' }).select().single();
+    await supabase.from('stock_items').insert({ catalog_id: newCat.id, motif_id: newMotif.id, color_id: newColor.id, is_ready: 1, notes: 'Init' });
+
+    res.status(201).json({ success: true, data: await getCatalogFull(newCat.id) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
-  const newCat = db.insert('catalogs', {
-    name: name.trim(),
-    description: description || '',
-    image_url: imageUrl,
-  });
-
-  // Default motif A and color 1
-  const defaultMotif = db.insert('motifs', {
-    catalog_id: newCat.id,
-    code: 'A',
-    name: 'Motif A',
-    description: 'Motif Utama',
-  });
-  const defaultColor = db.insert('colors', {
-    catalog_id: newCat.id,
-    code: '1',
-    name: 'Warna 1',
-    hex_code: '#94a3b8',
-  });
-  db.insert('stock_items', {
-    catalog_id: newCat.id,
-    motif_id: defaultMotif.id,
-    color_id: defaultColor.id,
-    is_ready: 1,
-    notes: 'Inisialisasi katalog baru',
-  });
-
-  res.status(201).json({ success: true, data: db.getCatalogFull(newCat.id) });
 });
 
-app.put('/api/catalogs/:id', (req, res) => {
+app.put('/api/catalogs/:id', async (req, res) => {
   const { name, description, subtitle, rack_location, last_updated_date } = req.body;
   const updates = {
-    ...(name ? { name: name.trim() } : {}),
-    ...(description !== undefined ? { description } : {}),
-    ...(subtitle !== undefined ? { subtitle } : {}),
-    ...(rack_location !== undefined ? { rack_location } : {}),
+    ...(name && { name: name.trim() }),
+    ...(description !== undefined && { description }),
+    ...(subtitle !== undefined && { subtitle }),
+    ...(rack_location !== undefined && { rack_location }),
     last_updated_date: last_updated_date || new Date().toISOString().split('T')[0],
+    updated_at: new Date().toISOString(),
   };
-
-  const updated = db.update('catalogs', req.params.id, updates);
-  if (!updated) return res.status(404).json({ success: false, message: 'Katalog tidak ditemukan' });
-  res.json({ success: true, data: db.getCatalogFull(req.params.id) });
+  await supabase.from('catalogs').update(updates).eq('id', req.params.id);
+  res.json({ success: true, data: await getCatalogFull(req.params.id) });
 });
 
-app.delete('/api/catalogs/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const deleted = db.delete('catalogs', id);
-  if (!deleted) return res.status(404).json({ success: false, message: 'Katalog tidak ditemukan' });
-
-  // Cascade delete
-  db.data.motifs = db.data.motifs.filter((m) => Number(m.catalog_id) !== id);
-  db.data.colors = db.data.colors.filter((c) => Number(c.catalog_id) !== id);
-  db.data.stock_items = db.data.stock_items.filter((s) => Number(s.catalog_id) !== id);
-  db.data.installation_photos = db.data.installation_photos.filter((p) => Number(p.catalog_id) !== id);
-  db.save();
-
-  res.json({ success: true, message: 'Katalog dan semua variasinya berhasil dihapus' });
+app.delete('/api/catalogs/:id', async (req, res) => {
+  await supabase.from('catalogs').delete().eq('id', Number(req.params.id));
+  res.json({ success: true, message: 'Terhapus' });
 });
 
-// Motif routes
-app.post('/api/catalogs/:id/motifs', (req, res) => {
+// Motif & Color
+app.post('/api/catalogs/:id/motifs', async (req, res) => {
   const catalogId = Number(req.params.id);
-  const { code, name, description } = req.body;
-
-  if (!code) return res.status(400).json({ success: false, message: 'Kode motif wajib diisi (misal A, B, C)' });
-
+  const { code, name } = req.body;
   const upperCode = code.trim().toUpperCase();
-  const existing = db.find('motifs', (m) => Number(m.catalog_id) === catalogId && m.code === upperCode)[0];
-  if (existing) {
-    return res.status(400).json({ success: false, message: `Kode motif ${upperCode} sudah ada pada katalog ini` });
+  const { data: newMotif } = await supabase.from('motifs').insert({ catalog_id: catalogId, code: upperCode, name: name || `Motif ${upperCode}` }).select().single();
+  const { data: colors } = await supabase.from('colors').select('*').eq('catalog_id', catalogId);
+  if (colors?.length) {
+    await supabase.from('stock_items').insert(colors.map(c => ({ catalog_id: catalogId, motif_id: newMotif.id, color_id: c.id, is_ready: 1 })));
   }
-
-  const newMotif = db.insert('motifs', {
-    catalog_id: catalogId,
-    code: upperCode,
-    name: name || `Motif ${upperCode}`,
-    description: description || '',
-  });
-
-  // Initialize stock for all existing colors of this catalog
-  const catalogColors = db.find('colors', (c) => Number(c.catalog_id) === catalogId);
-  for (const c of catalogColors) {
-    db.toggleStock(catalogId, newMotif.id, c.id, 1, 'Stok baru ditambahkan');
-  }
-
-  res.status(201).json({ success: true, data: db.getCatalogFull(catalogId) });
+  res.status(201).json({ success: true, data: await getCatalogFull(catalogId) });
 });
 
-app.delete('/api/motifs/:id', (req, res) => {
-  const motifId = Number(req.params.id);
-  const motif = db.findById('motifs', motifId);
-  if (!motif) return res.status(404).json({ success: false, message: 'Motif tidak ditemukan' });
-
-  const catalogId = motif.catalog_id;
-  db.delete('motifs', motifId);
-  db.data.stock_items = db.data.stock_items.filter((s) => Number(s.motif_id) !== motifId);
-  db.data.installation_photos = db.data.installation_photos.filter((p) => Number(p.motif_id) !== motifId);
-  db.save();
-
-  res.json({ success: true, data: db.getCatalogFull(catalogId) });
-});
-
-// Color routes
-app.post('/api/catalogs/:id/colors', (req, res) => {
+app.post('/api/catalogs/:id/colors', async (req, res) => {
   const catalogId = Number(req.params.id);
-  const { code, name, hex_code } = req.body;
-
-  if (!code) return res.status(400).json({ success: false, message: 'Kode warna wajib diisi (misal 1, 2, 3)' });
-
+  const { code, name } = req.body;
   const trimmedCode = code.trim();
-  const existing = db.find('colors', (c) => Number(c.catalog_id) === catalogId && c.code === trimmedCode)[0];
-  if (existing) {
-    return res.status(400).json({ success: false, message: `Kode warna ${trimmedCode} sudah ada pada katalog ini` });
+  const { data: newColor } = await supabase.from('colors').insert({ catalog_id: catalogId, code: trimmedCode, name: name || `Warna ${trimmedCode}` }).select().single();
+  const { data: motifs } = await supabase.from('motifs').select('*').eq('catalog_id', catalogId);
+  if (motifs?.length) {
+    await supabase.from('stock_items').insert(motifs.map(m => ({ catalog_id: catalogId, motif_id: m.id, color_id: newColor.id, is_ready: 1 })));
   }
-
-  const newColor = db.insert('colors', {
-    catalog_id: catalogId,
-    code: trimmedCode,
-    name: name || `Warna ${trimmedCode}`,
-    hex_code: hex_code || '#cbd5e1',
-  });
-
-  // Initialize stock for all existing motifs of this catalog
-  const catalogMotifs = db.find('motifs', (m) => Number(m.catalog_id) === catalogId);
-  for (const m of catalogMotifs) {
-    db.toggleStock(catalogId, m.id, newColor.id, 1, 'Stok baru ditambahkan');
-  }
-
-  res.status(201).json({ success: true, data: db.getCatalogFull(catalogId) });
+  res.status(201).json({ success: true, data: await getCatalogFull(catalogId) });
 });
 
-app.delete('/api/colors/:id', (req, res) => {
-  const colorId = Number(req.params.id);
-  const color = db.findById('colors', colorId);
-  if (!color) return res.status(404).json({ success: false, message: 'Warna tidak ditemukan' });
-
-  const catalogId = color.catalog_id;
-  db.delete('colors', colorId);
-  db.data.stock_items = db.data.stock_items.filter((s) => Number(s.color_id) !== colorId);
-  db.data.installation_photos = db.data.installation_photos.filter((p) => Number(p.color_id) !== colorId);
-  db.save();
-
-  res.json({ success: true, data: db.getCatalogFull(catalogId) });
-});
-
-// ==========================================
-// 4. STOCK TOGGLE & BULK UPDATE
-// ==========================================
-app.post('/api/stock/toggle', (req, res) => {
+// Stock Toggle
+app.post('/api/stock/toggle', async (req, res) => {
   const { catalog_id, motif_id, color_id, is_ready, notes } = req.body;
-  if (!catalog_id || !motif_id || !color_id) {
-    return res.status(400).json({ success: false, message: 'Parameter catalog_id, motif_id, color_id wajib diisi' });
+  const { data: existing } = await supabase.from('stock_items').select('*').eq('catalog_id', catalog_id).eq('motif_id', motif_id).eq('color_id', color_id).limit(1);
+  let item;
+  if (existing?.length) {
+    const nextReady = is_ready !== undefined ? (is_ready ? 1 : 0) : (existing[0].is_ready ? 0 : 1);
+    const { data } = await supabase.from('stock_items').update({ is_ready: nextReady, notes: notes ?? existing[0].notes }).eq('id', existing[0].id).select().single();
+    item = data;
+  } else {
+    const { data } = await supabase.from('stock_items').insert({ catalog_id: Number(catalog_id), motif_id: Number(motif_id), color_id: Number(color_id), is_ready: is_ready !== undefined ? (is_ready ? 1 : 0) : 1 }).select().single();
+    item = data;
   }
-
-  const item = db.toggleStock(catalog_id, motif_id, color_id, is_ready, notes);
   res.json({ success: true, data: item });
-});
-
-app.post('/api/stock/bulk-set', (req, res) => {
-  const { catalog_id, motif_id, color_id, is_ready, notes } = req.body;
-  if (!catalog_id) return res.status(400).json({ success: false, message: 'catalog_id wajib diisi' });
-
-  const targetState = is_ready ? 1 : 0;
-  const items = db.find('stock_items', (s) => {
-    let match = Number(s.catalog_id) === Number(catalog_id);
-    if (motif_id) match = match && Number(s.motif_id) === Number(motif_id);
-    if (color_id) match = match && Number(s.color_id) === Number(color_id);
-    return match;
-  });
-
-  items.forEach((item) => {
-    item.is_ready = targetState;
-    if (notes !== undefined) item.notes = notes;
-    item.updated_at = new Date().toISOString();
-  });
-  db.save();
-
-  res.json({ success: true, updatedCount: items.length, data: db.getCatalogFull(catalog_id) });
 });
 
 // ==========================================
 // 5. CURTAIN MODELS
 // ==========================================
-app.get('/api/models', (req, res) => {
-  const models = db.find('curtain_models').sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  res.json({ success: true, data: models });
+app.get('/api/models', async (req, res) => {
+  const { data } = await supabase.from('curtain_models').select('*').order('created_at', { ascending: false });
+  res.json({ success: true, data: data || [] });
 });
 
-app.post('/api/models', upload.single('photo'), (req, res) => {
-  const { title, notes, category } = req.body;
-  if (!title) return res.status(400).json({ success: false, message: 'Judul model korden wajib diisi' });
-  if (!req.file && !req.body.photo_url) {
-    return res.status(400).json({ success: false, message: 'Foto model wajib diupload' });
+app.post('/api/models', upload.single('photo'), async (req, res) => {
+  try {
+    const { title, notes, category } = req.body;
+    const photoUrl = req.file ? await uploadToSupabaseStorage(req.file, 'models') : req.body.photo_url;
+    
+    if (!photoUrl) return res.status(400).json({ success: false, message: 'Foto model wajib diupload' });
+
+    const { data } = await supabase.from('curtain_models').insert({ title: title.trim(), photo_url: photoUrl, notes: notes || '', category: category || 'Gorden Utama' }).select().single();
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  const photoUrl = req.file ? `/uploads/${req.file.filename}` : req.body.photo_url;
-  const newModel = db.insert('curtain_models', {
-    title: title.trim(),
-    photo_url: photoUrl,
-    notes: notes || '',
-    category: category || 'Gorden Utama',
-  });
-
-  res.status(201).json({ success: true, data: newModel });
 });
 
-app.put('/api/models/:id', upload.single('photo'), (req, res) => {
-  const { title, notes, category } = req.body;
-  const updates = {};
-  if (title) updates.title = title.trim();
-  if (notes !== undefined) updates.notes = notes;
-  if (category) updates.category = category;
-  if (req.file) updates.photo_url = `/uploads/${req.file.filename}`;
-
-  const updated = db.update('curtain_models', req.params.id, updates);
-  if (!updated) return res.status(404).json({ success: false, message: 'Model korden tidak ditemukan' });
-  res.json({ success: true, data: updated });
-});
-
-app.delete('/api/models/:id', (req, res) => {
-  const deleted = db.delete('curtain_models', req.params.id);
-  if (!deleted) return res.status(404).json({ success: false, message: 'Model korden tidak ditemukan' });
-  res.json({ success: true, message: 'Model korden berhasil dihapus' });
+app.delete('/api/models/:id', async (req, res) => {
+  await supabase.from('curtain_models').delete().eq('id', req.params.id);
+  res.json({ success: true });
 });
 
 // ==========================================
 // 6. INSTALLATION PHOTOS
 // ==========================================
-app.get('/api/installations', (req, res) => {
-  const { catalog_id, motif_id, color_id, search } = req.query;
-  const photos = db.getInstallationPhotos({ catalog_id, motif_id, color_id, search });
+app.get('/api/installations', async (req, res) => {
+  const photos = await getInstallationPhotos(req.query);
   res.json({ success: true, data: photos });
 });
 
-app.post('/api/installations', upload.single('photo'), (req, res) => {
-  const { catalog_name, catalog_id, motif_id, color_id, caption, room_type } = req.body;
+app.post('/api/installations', upload.single('photo'), async (req, res) => {
+  try {
+    const { catalog_name, catalog_id, caption, room_type } = req.body;
+    let catName = (catalog_name || '').trim();
+    const catId = catalog_id ? Number(catalog_id) : 0;
+    
+    const photoUrl = req.file ? await uploadToSupabaseStorage(req.file, 'installations') : req.body.photo_url;
+    if (!photoUrl) return res.status(400).json({ success: false, message: 'Foto pemasangan wajib diupload' });
 
-  let catName = (catalog_name || '').trim();
-  let catId = catalog_id ? Number(catalog_id) : 0;
-
-  if (!catName && catId) {
-    const existingCat = db.findById('catalogs', catId);
-    if (existingCat) catName = existingCat.name;
+    const { data } = await supabase.from('installation_photos').insert({ catalog_name: catName, catalog_id: catId, photo_url: photoUrl, caption: caption || '', room_type: room_type || '' }).select().single();
+    res.status(201).json({ success: true, data: { ...data, catalog_name: data.catalog_name || 'Umum' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
-
-  if (!catName) {
-    return res.status(400).json({ success: false, message: 'Nama Katalog wajib diisi' });
-  }
-
-  if (!req.file && !req.body.photo_url) {
-    return res.status(400).json({ success: false, message: 'Foto hasil pemasangan wajib diupload' });
-  }
-
-  const photoUrl = req.file ? `/uploads/${req.file.filename}` : req.body.photo_url;
-  const newPhoto = db.insert('installation_photos', {
-    catalog_name: catName,
-    catalog_id: catId,
-    motif_id: motif_id ? Number(motif_id) : 0,
-    color_id: color_id ? Number(color_id) : 0,
-    photo_url: photoUrl,
-    caption: caption || '',
-    room_type: room_type || '',
-  });
-
-  const allPhotos = db.getInstallationPhotos();
-  const enriched = allPhotos.find((p) => p.id === newPhoto.id);
-  res.status(201).json({ success: true, data: enriched || newPhoto });
 });
 
-app.delete('/api/installations/:id', (req, res) => {
-  const deleted = db.delete('installation_photos', req.params.id);
-  if (!deleted) return res.status(404).json({ success: false, message: 'Foto pemasangan tidak ditemukan' });
-  res.json({ success: true, message: 'Foto pemasangan berhasil dihapus' });
+app.delete('/api/installations/:id', async (req, res) => {
+  await supabase.from('installation_photos').delete().eq('id', req.params.id);
+  res.json({ success: true });
 });
 
 // ==========================================
 // 7. GLOBAL SEARCH
 // ==========================================
-app.get('/api/search', (req, res) => {
+app.get('/api/search', async (req, res) => {
   const q = (req.query.q || '').trim().toLowerCase();
   if (!q) return res.json({ success: true, data: { catalogs: [], models: [], photos: [] } });
 
-  const allCatalogs = db.getAllCatalogsFull();
-  const matchedCatalogs = allCatalogs.filter((c) => {
-    const matchCatName = c.name.toLowerCase().includes(q);
-    const matchMotif = c.motifs.some((m) => m.code.toLowerCase().includes(q) || (m.name && m.name.toLowerCase().includes(q)));
-    const matchColor = c.colors.some((col) => col.code.toLowerCase().includes(q) || (col.name && col.name.toLowerCase().includes(q)));
-    return matchCatName || matchMotif || matchColor;
-  });
+  const s = `%${q}%`;
+  const [{ data: rawCatalogs }, { data: models }, photos] = await Promise.all([
+    supabase.from('catalogs').select('*').ilike('name', s),
+    supabase.from('curtain_models').select('*').or(`title.ilike.${s},notes.ilike.${s}`),
+    getInstallationPhotos({ search: q }),
+  ]);
 
-  const allModels = db.find('curtain_models');
-  const matchedModels = allModels.filter((m) => m.title.toLowerCase().includes(q) || (m.notes && m.notes.toLowerCase().includes(q)));
-
-  const matchedPhotos = db.getInstallationPhotos({ search: q });
-
-  res.json({
-    success: true,
-    data: {
-      catalogs: matchedCatalogs,
-      models: matchedModels,
-      photos: matchedPhotos,
-    },
-  });
+  const catalogs = await Promise.all((rawCatalogs || []).map(c => getCatalogFull(c.id)));
+  res.json({ success: true, data: { catalogs, models: models || [], photos } });
 });
 
-// SPA wildcard fallback
+// SPA fallback untuk Vite React
 if (fs.existsSync(distDir)) {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distDir, 'index.html'));
-  });
+  app.get('*', (req, res) => res.sendFile(path.join(distDir, 'index.html')));
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 KordenPro Backend Server berjalan di http://localhost:${PORT}`);
-});
+// Hanya jalankan app.listen jika TIDAK sedang di Vercel
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`🚀 KordenPro (Supabase) berjalan di http://localhost:${PORT}`));
+}
+
+// Export agar dikenali sebagai serverless function oleh Vercel
+export default app;
