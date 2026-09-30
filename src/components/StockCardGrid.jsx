@@ -224,8 +224,13 @@ export default function StockCardGrid({
       {/* 3. Catalog Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredCatalogs.map((catalog) => {
-          const motifs = catalog.motifs || [];
-          const colors = catalog.colors || [];
+          // Natural numerical sort for motifs (A, B, C...) and colors (1, 2, ... 9, 10, 11...)
+          const motifs = (catalog.motifs || []).slice().sort((a, b) =>
+            a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+          );
+          const colors = (catalog.colors || []).slice().sort((a, b) =>
+            a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+          );
           const matrix = catalog.stockMatrix || {};
 
           // Calculate ready vs total for this catalog card
@@ -256,13 +261,16 @@ export default function StockCardGrid({
             >
               {/* Card Header (Terracotta Orange) */}
               <div className="bg-[#d96b27] px-3.5 py-2.5 text-white flex items-center justify-between">
-                <div className="flex items-baseline space-x-1.5 min-w-0 pr-2">
-                  <h3 className="font-black text-sm uppercase tracking-wide truncate">
+                {/* Catalog Name Full on top, Subtitle/Catatan underneath */}
+                <div className="min-w-0 pr-2 flex-1">
+                  <h3 className="font-black text-sm sm:text-base uppercase tracking-wide truncate leading-tight">
                     {catalog.name}
                   </h3>
-                  <span className="text-[11px] font-normal text-white/90 truncate">
-                    ({catalog.subtitle || catalog.description || 'Kain Korden'})
-                  </span>
+                  {(catalog.subtitle || catalog.description) && (
+                    <p className="text-[11px] font-normal text-white/90 truncate mt-0.5 leading-snug">
+                      {catalog.subtitle || catalog.description}
+                    </p>
+                  )}
                 </div>
 
                 {/* Admin Edit/Delete Actions */}

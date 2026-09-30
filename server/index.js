@@ -53,8 +53,12 @@ async function getCatalogFull(catalogId) {
       supabase.from('installation_photos').select('*').eq('catalog_id', catalogId),
     ]);
 
-  const safeMotifs = motifs || [];
-  const safeColors = colors || [];
+  const safeMotifs = (motifs || []).sort((a, b) =>
+    a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+  );
+  const safeColors = (colors || []).sort((a, b) =>
+    a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+  );
   const safeStock = stockItems || [];
 
   const matrix = {};

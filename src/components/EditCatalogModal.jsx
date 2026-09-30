@@ -71,6 +71,19 @@ export default function EditCatalogModal({
     }
   };
 
+  // Natural sorting for existing motifs and colors
+  const sortedMotifs = useMemo(() => {
+    return (catalog.motifs || []).slice().sort((a, b) =>
+      a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [catalog.motifs]);
+
+  const sortedColors = useMemo(() => {
+    return (catalog.colors || []).slice().sort((a, b) =>
+      a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }, [catalog.colors]);
+
   // Parsed Motifs preview
   const parsedMotifCodes = useMemo(() => {
     return parseCodeRange(newMotifCode).map((m) => m.toUpperCase());
@@ -97,7 +110,7 @@ export default function EditCatalogModal({
     return parsedColorCodes.filter((c) => !existingColorSet.has(c.toLowerCase()));
   }, [parsedColorCodes, existingColorSet]);
 
-  // Add New Motif (Bisa satu / banyak kode sekaligus)
+  // Add New Motif (Single / Batch)
   const handleAddMotifSubmit = async (e) => {
     e.preventDefault();
     if (parsedMotifCodes.length === 0) {
@@ -128,7 +141,7 @@ export default function EditCatalogModal({
     }
   };
 
-  // Add New Color (Bisa satu / rentang / banyak nomor sekaligus)
+  // Add New Color (Single / Batch Range)
   const handleAddColorSubmit = async (e) => {
     e.preventDefault();
     if (parsedColorCodes.length === 0) {
@@ -331,7 +344,7 @@ export default function EditCatalogModal({
                     <Plus className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
                     <span>Tambah Kode Motif Baru:</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-[#888888]">Bisa satu kode atau banyak (misal: C, D atau C-E)</span>
+                  <span className="text-[10px] text-slate-400 dark:text-[#888888]">Bisa rentang: C-E atau C, D</span>
                 </div>
 
                 {/* Quick Presets for Motifs */}
@@ -356,7 +369,7 @@ export default function EditCatalogModal({
                       required
                       value={newMotifCode}
                       onChange={(e) => setNewMotifCode(e.target.value.toUpperCase())}
-                      placeholder="Kode (C, D atau C-E)"
+                      placeholder="Kode (C, D)"
                       className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] uppercase font-mono font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none text-center bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-[#E0E0E0]"
                     />
                   </div>
@@ -422,13 +435,13 @@ export default function EditCatalogModal({
                 </button>
               </form>
 
-              {/* List Motif Aktif */}
+              {/* List Motif Aktif (Naturally Sorted: A, B, C...) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0] mb-2">
-                  Daftar Kode Motif Aktif ({catalog.motifs?.length || 0}):
+                  Daftar Kode Motif Aktif ({sortedMotifs.length}):
                 </label>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {catalog.motifs?.map((motif) => (
+                  {sortedMotifs.map((motif) => (
                     <div
                       key={motif.id}
                       className="p-2.5 rounded-xl bg-white dark:bg-[#2A2A2A] border border-slate-200/80 dark:border-[#444444] flex items-center justify-between text-xs"
@@ -445,7 +458,7 @@ export default function EditCatalogModal({
                         </div>
                       </div>
 
-                      {catalog.motifs.length > 1 && (
+                      {catalog.motifs?.length > 1 && (
                         <button
                           type="button"
                           onClick={() => onDeleteMotif(motif.id, motif.code)}
@@ -574,13 +587,13 @@ export default function EditCatalogModal({
                 </button>
               </form>
 
-              {/* List Warna Aktif */}
+              {/* List Warna Aktif (Naturally Sorted: 1, 2, ... 9, 10, 11, 12, 13) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0] mb-2">
-                  Daftar Nomor Seri Warna Aktif ({catalog.colors?.length || 0}):
+                  Daftar Nomor Seri Warna Aktif ({sortedColors.length}):
                 </label>
                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                  {catalog.colors?.map((col) => (
+                  {sortedColors.map((col) => (
                     <div
                       key={col.id}
                       className="p-2.5 rounded-xl bg-white dark:bg-[#2A2A2A] border border-slate-200/80 dark:border-[#444444] flex items-center justify-between text-xs"

@@ -9,12 +9,12 @@
  */
 export function parseCodeRange(input) {
   if (!input || typeof input !== 'string') return [];
-  
+
   // Normalize words like "s/d", "sd", "sampai", "to" into hyphens
   let cleaned = input.replace(/\s*(?:s\/d|sd|sampai|to)\s*/gi, '-');
   // Normalize spaces around hyphens like "1 - 10" -> "1-10"
   cleaned = cleaned.replace(/\s*-\s*/g, '-');
-  
+
   const tokens = cleaned.split(/[,;\s]+/).map((t) => t.trim()).filter(Boolean);
   const result = [];
 
