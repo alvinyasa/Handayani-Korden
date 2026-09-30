@@ -20,19 +20,19 @@ app.use(express.urlencoded({ extended: true }));
 // ─── HELPER SUPABASE STORAGE ───────────────────────────────────────────────
 async function uploadToSupabaseStorage(file, folderPath) {
   if (!file) return null;
-  const fileExt = file.originalname.split('.').pop();
+  const fileExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase();
   const fileName = `${folderPath}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
 
   const { error } = await supabase.storage
     .from('uploads')
     .upload(fileName, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false
+      contentType: file.mimetype || 'image/jpeg',
+      upsert: true
     });
 
   if (error) {
     console.error('Storage Upload Error:', error);
-    throw new Error('Gagal upload gambar ke Supabase');
+    throw new Error(`Gagal upload gambar ke Supabase (${error.message || 'Error Storage'})`);
   }
 
   const { data } = supabase.storage.from('uploads').getPublicUrl(fileName);
