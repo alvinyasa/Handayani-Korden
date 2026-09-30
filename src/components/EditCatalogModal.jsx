@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   X,
   Plus,
@@ -9,8 +9,10 @@ import {
   Edit3,
   Check,
   MapPin,
-  Tag
+  Tag,
+  Sparkles
 } from 'lucide-react';
+import { parseCodeRange } from '../utils/codeParser';
 
 export default function EditCatalogModal({
   catalog,
@@ -69,11 +71,41 @@ export default function EditCatalogModal({
     }
   };
 
-  // Add New Motif (Kode Baru)
+  // Parsed Motifs preview
+  const parsedMotifCodes = useMemo(() => {
+    return parseCodeRange(newMotifCode).map((m) => m.toUpperCase());
+  }, [newMotifCode]);
+
+  const existingMotifSet = useMemo(() => {
+    return new Set((catalog.motifs || []).map((m) => String(m.code).toUpperCase()));
+  }, [catalog.motifs]);
+
+  const newUniqueMotifs = useMemo(() => {
+    return parsedMotifCodes.filter((m) => !existingMotifSet.has(m));
+  }, [parsedMotifCodes, existingMotifSet]);
+
+  // Parsed Colors preview
+  const parsedColorCodes = useMemo(() => {
+    return parseCodeRange(newColorCode);
+  }, [newColorCode]);
+
+  const existingColorSet = useMemo(() => {
+    return new Set((catalog.colors || []).map((c) => String(c.code).toLowerCase()));
+  }, [catalog.colors]);
+
+  const newUniqueColors = useMemo(() => {
+    return parsedColorCodes.filter((c) => !existingColorSet.has(c.toLowerCase()));
+  }, [parsedColorCodes, existingColorSet]);
+
+  // Add New Motif (Bisa satu / banyak kode sekaligus)
   const handleAddMotifSubmit = async (e) => {
     e.preventDefault();
-    if (!newMotifCode.trim()) {
-      setMotifError('Kode motif wajib diisi (misal: C, D)');
+    if (parsedMotifCodes.length === 0) {
+      setMotifError('Kode motif wajib diisi (misal: C atau C, D atau C-E)');
+      return;
+    }
+    if (newUniqueMotifs.length === 0) {
+      setMotifError('Semua kode motif tersebut sudah ada di katalog ini');
       return;
     }
     setMotifError('');
@@ -81,25 +113,30 @@ export default function EditCatalogModal({
 
     const res = await onAddMotif(catalog.id, {
       code: newMotifCode.trim(),
-      name: newMotifName.trim() || `Motif ${newMotifCode.trim()}`,
+      codes: newUniqueMotifs,
+      name: newMotifName.trim() || undefined,
     });
 
     setIsAddingMotif(false);
     if (res && res.success) {
       setNewMotifCode('');
       setNewMotifName('');
-      setMessage(`Kode motif ${newMotifCode.toUpperCase()} berhasil ditambahkan!`);
-      setTimeout(() => setMessage(''), 3000);
+      setMessage(res.message || `${newUniqueMotifs.length} kode motif berhasil ditambahkan!`);
+      setTimeout(() => setMessage(''), 3500);
     } else {
       setMotifError(res?.message || 'Gagal menambahkan motif');
     }
   };
 
-  // Add New Color (Nomor Seri Baru)
+  // Add New Color (Bisa satu / rentang / banyak nomor sekaligus)
   const handleAddColorSubmit = async (e) => {
     e.preventDefault();
-    if (!newColorCode.trim()) {
-      setColorError('Nomor warna wajib diisi (misal: 9, 10)');
+    if (parsedColorCodes.length === 0) {
+      setColorError('Nomor warna wajib diisi (misal: 1-10 atau 9, 10)');
+      return;
+    }
+    if (newUniqueColors.length === 0) {
+      setColorError('Semua nomor warna tersebut sudah ada di katalog ini');
       return;
     }
     setColorError('');
@@ -107,7 +144,8 @@ export default function EditCatalogModal({
 
     const res = await onAddColor(catalog.id, {
       code: newColorCode.trim(),
-      name: newColorName.trim() || `Warna ${newColorCode.trim()}`,
+      codes: newUniqueColors,
+      name: newColorName.trim() || undefined,
       hex_code: '#cbd5e1',
     });
 
@@ -115,8 +153,8 @@ export default function EditCatalogModal({
     if (res && res.success) {
       setNewColorCode('');
       setNewColorName('');
-      setMessage(`Nomor seri warna ${newColorCode} berhasil ditambahkan!`);
-      setTimeout(() => setMessage(''), 3000);
+      setMessage(res.message || `${newUniqueColors.length} nomor seri warna berhasil ditambahkan!`);
+      setTimeout(() => setMessage(''), 3500);
     } else {
       setColorError(res?.message || 'Gagal menambahkan warna');
     }
@@ -286,11 +324,29 @@ export default function EditCatalogModal({
                 </div>
               )}
 
-              {/* Form Tambah Kode Motif Baru */}
+              {/* Form Tambah Kode Motif Baru (Single / Batch) */}
               <form onSubmit={handleAddMotifSubmit} className="p-4 bg-slate-50 dark:bg-[#2A2A2A] rounded-2xl border border-slate-200/80 dark:border-[#444444] space-y-3">
-                <div className="font-bold text-xs text-slate-800 dark:text-[#E0E0E0] flex items-center space-x-1.5">
-                  <Plus className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
-                  <span>Tambah Kode Motif Baru (Contoh: C, D):</span>
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-xs text-slate-800 dark:text-[#E0E0E0] flex items-center space-x-1.5">
+                    <Plus className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
+                    <span>Tambah Kode Motif Baru:</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 dark:text-[#888888]">Bisa satu kode atau banyak (misal: C, D atau C-E)</span>
+                </div>
+
+                {/* Quick Presets for Motifs */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+                  <span className="text-[10px] text-slate-400 dark:text-[#888888] font-bold shrink-0">Preset:</span>
+                  {['B', 'C, D', 'B, C, D', 'C-E'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setNewMotifCode(preset)}
+                      className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[#d96b27] dark:text-orange-400 text-[10px] font-bold border border-orange-200/80 dark:border-orange-800/40 shrink-0 transition-all active-press"
+                    >
+                      + Motif {preset}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -298,31 +354,72 @@ export default function EditCatalogModal({
                     <input
                       type="text"
                       required
-                      maxLength={4}
                       value={newMotifCode}
                       onChange={(e) => setNewMotifCode(e.target.value.toUpperCase())}
-                      placeholder="Kode (C)"
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] uppercase font-mono font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none text-center bg-white dark:bg-[#2A2A2A] text-slate-900 dark:text-[#E0E0E0]"
+                      placeholder="Kode (C, D atau C-E)"
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] uppercase font-mono font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none text-center bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-[#E0E0E0]"
                     />
                   </div>
 
-                  <div className="col-span-2 flex space-x-1.5">
+                  <div className="col-span-2">
                     <input
                       type="text"
                       value={newMotifName}
                       onChange={(e) => setNewMotifName(e.target.value)}
-                      placeholder="Keterangan (Opsional)"
-                      className="flex-1 text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none bg-white dark:bg-[#2A2A2A] text-slate-900 dark:text-[#E0E0E0] font-medium"
+                      placeholder="Keterangan opsional (untuk 1 motif)"
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-[#E0E0E0] font-medium"
                     />
-                    <button
-                      type="submit"
-                      disabled={isAddingMotif}
-                      className="px-4 py-2.5 bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold rounded-xl active-press shrink-0 shadow-xs transition-colors"
-                    >
-                      {isAddingMotif ? '...' : '+ Tambah'}
-                    </button>
                   </div>
                 </div>
+
+                {/* Live Preview Motifs to add */}
+                {parsedMotifCodes.length > 0 && (
+                  <div className="p-2.5 rounded-xl bg-orange-50/70 dark:bg-[#1E1E1E] border border-orange-200/80 dark:border-[#444444] space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-[#d96b27] dark:text-orange-400 flex items-center space-x-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Akan menambahkan {newUniqueMotifs.length} kode motif:</span>
+                      </span>
+                      {parsedMotifCodes.length - newUniqueMotifs.length > 0 && (
+                        <span className="text-[10px] text-slate-400 dark:text-[#888888]">
+                          ({parsedMotifCodes.length - newUniqueMotifs.length} sudah ada)
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {parsedMotifCodes.map((code) => {
+                        const isExisting = existingMotifSet.has(code);
+                        return (
+                          <span
+                            key={code}
+                            className={`px-2 py-0.5 rounded-md font-mono text-[11px] font-bold ${
+                              isExisting
+                                ? 'bg-slate-200 dark:bg-[#333333] text-slate-400 dark:text-[#888888] line-through'
+                                : 'bg-slate-900 dark:bg-[#333333] text-white border border-slate-700'
+                            }`}
+                          >
+                            Motif {code}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isAddingMotif || (parsedMotifCodes.length > 0 && newUniqueMotifs.length === 0)}
+                  className="w-full py-2.5 bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold rounded-xl active-press shrink-0 shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {isAddingMotif
+                      ? 'Menambahkan...'
+                      : newUniqueMotifs.length > 1
+                      ? `Tambahkan ${newUniqueMotifs.length} Kode Motif Sekaligus`
+                      : 'Tambah Kode Motif'}
+                  </span>
+                </button>
               </form>
 
               {/* List Motif Aktif */}
@@ -374,11 +471,34 @@ export default function EditCatalogModal({
                 </div>
               )}
 
-              {/* Form Tambah Warna Baru */}
+              {/* Form Tambah Warna Baru (Single / Batch Range) */}
               <form onSubmit={handleAddColorSubmit} className="p-4 bg-slate-50 dark:bg-[#2A2A2A] rounded-2xl border border-slate-200/80 dark:border-[#444444] space-y-3">
-                <div className="font-bold text-xs text-slate-800 dark:text-[#E0E0E0] flex items-center space-x-1.5">
-                  <Plus className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
-                  <span>Tambah Nomor Seri Warna Baru (Contoh: 9, 10):</span>
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-xs text-slate-800 dark:text-[#E0E0E0] flex items-center space-x-1.5">
+                    <Plus className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
+                    <span>Tambah Nomor Seri Warna:</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 dark:text-[#888888]">Bisa rentang: 1-10 atau 1, 2, 3</span>
+                </div>
+
+                {/* Quick Presets for Numbers */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
+                  <span className="text-[10px] text-slate-400 dark:text-[#888888] font-bold shrink-0">Preset Cepat:</span>
+                  {[
+                    { label: '1 s/d 10', value: '1-10' },
+                    { label: '1 s/d 12', value: '1-12' },
+                    { label: '1 s/d 15', value: '1-15' },
+                    { label: '1 s/d 20', value: '1-20' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setNewColorCode(preset.value)}
+                      className="px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-[#d96b27] dark:text-orange-400 text-[10px] font-bold border border-orange-200/80 dark:border-orange-800/40 shrink-0 transition-all active-press"
+                    >
+                      + {preset.label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
@@ -388,28 +508,70 @@ export default function EditCatalogModal({
                       required
                       value={newColorCode}
                       onChange={(e) => setNewColorCode(e.target.value)}
-                      placeholder="Nomor (9)"
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] font-mono font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none text-center bg-white dark:bg-[#2A2A2A] text-slate-900 dark:text-[#E0E0E0]"
+                      placeholder="Nomor (1-10)"
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] font-mono font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none text-center bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-[#E0E0E0]"
                     />
                   </div>
 
-                  <div className="col-span-2 flex space-x-1.5">
+                  <div className="col-span-2">
                     <input
                       type="text"
                       value={newColorName}
                       onChange={(e) => setNewColorName(e.target.value)}
-                      placeholder="Nama warna (Opsional)"
-                      className="flex-1 text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none bg-white dark:bg-[#2A2A2A] text-slate-900 dark:text-[#E0E0E0] font-medium"
+                      placeholder="Keterangan opsional (untuk 1 warna)"
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-[#444444] focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none bg-white dark:bg-[#1E1E1E] text-slate-900 dark:text-[#E0E0E0] font-medium"
                     />
-                    <button
-                      type="submit"
-                      disabled={isAddingColor}
-                      className="px-4 py-2.5 bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold rounded-xl active-press shrink-0 shadow-xs transition-colors"
-                    >
-                      {isAddingColor ? '...' : '+ Tambah'}
-                    </button>
                   </div>
                 </div>
+
+                {/* Live Preview Colors to add */}
+                {parsedColorCodes.length > 0 && (
+                  <div className="p-2.5 rounded-xl bg-orange-50/70 dark:bg-[#1E1E1E] border border-orange-200/80 dark:border-[#444444] space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-[#d96b27] dark:text-orange-400 flex items-center space-x-1">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Akan menambahkan {newUniqueColors.length} nomor seri baru:</span>
+                      </span>
+                      {parsedColorCodes.length - newUniqueColors.length > 0 && (
+                        <span className="text-[10px] text-slate-400 dark:text-[#888888]">
+                          ({parsedColorCodes.length - newUniqueColors.length} sudah ada)
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                      {parsedColorCodes.map((code) => {
+                        const isExisting = existingColorSet.has(code.toLowerCase());
+                        return (
+                          <span
+                            key={code}
+                            className={`px-2 py-0.5 rounded-md font-mono text-[11px] font-bold ${
+                              isExisting
+                                ? 'bg-slate-200 dark:bg-[#333333] text-slate-400 dark:text-[#888888] line-through'
+                                : 'bg-emerald-600 text-white shadow-xs'
+                            }`}
+                          >
+                            {code}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isAddingColor || (parsedColorCodes.length > 0 && newUniqueColors.length === 0)}
+                  className="w-full py-2.5 bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold rounded-xl active-press shrink-0 shadow-md shadow-orange-600/20 transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {isAddingColor
+                      ? 'Menambahkan...'
+                      : newUniqueColors.length > 1
+                      ? `Tambahkan ${newUniqueColors.length} Nomor Sekaligus`
+                      : 'Tambah Nomor Warna'}
+                  </span>
+                </button>
               </form>
 
               {/* List Warna Aktif */}

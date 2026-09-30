@@ -156,20 +156,104 @@ app.get('/api/catalogs/:id', async (req, res) => {
   res.json({ success: true, data: catalog });
 });
 
+function parseCodeRange(input) {
+  if (!input || typeof input !== 'string') return [];
+  let cleaned = input.replace(/\s*(?:s\/d|sd|sampai|to)\s*/gi, '-');
+  cleaned = cleaned.replace(/\s*-\s*/g, '-');
+  const tokens = cleaned.split(/[,;\s]+/).map((t) => t.trim()).filter(Boolean);
+  const result = [];
+
+  for (const token of tokens) {
+    const numMatch = token.match(/^(\d+)-(\d+)$/);
+    if (numMatch) {
+      const start = parseInt(numMatch[1], 10);
+      const end = parseInt(numMatch[2], 10);
+      const pad = numMatch[1].length > 1 && numMatch[1].startsWith('0') ? numMatch[1].length : 0;
+      const step = start <= end ? 1 : -1;
+      const count = Math.min(Math.abs(end - start) + 1, 100);
+
+      for (let i = 0; i < count; i++) {
+        const val = start + i * step;
+        const formatted = pad ? String(val).padStart(pad, '0') : String(val);
+        if (!result.includes(formatted)) result.push(formatted);
+      }
+      continue;
+    }
+
+    const letterMatch = token.match(/^([A-Za-z])-([A-Za-z])$/);
+    if (letterMatch) {
+      const start = letterMatch[1].toUpperCase().charCodeAt(0);
+      const end = letterMatch[2].toUpperCase().charCodeAt(0);
+      const step = start <= end ? 1 : -1;
+      const count = Math.min(Math.abs(end - start) + 1, 26);
+
+      for (let i = 0; i < count; i++) {
+        const char = String.fromCharCode(start + i * step);
+        if (!result.includes(char)) result.push(char);
+      }
+      continue;
+    }
+
+    if (!result.includes(token)) {
+      result.push(token);
+    }
+  }
+
+  return result;
+}
+
 app.post('/api/catalogs', upload.single('image'), async (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, subtitle, rack_location, initial_motifs, initial_colors } = req.body;
   if (!name) return res.status(400).json({ success: false, message: 'Nama katalog wajib diisi' });
 
   try {
     const imageUrl = req.file ? await uploadToSupabaseStorage(req.file, 'catalogs') : null;
     const { data: newCat, error } = await supabase
-      .from('catalogs').insert({ name: name.trim(), description: description || '', image_url: imageUrl })
+      .from('catalogs').insert({
+        name: name.trim(),
+        description: description || '',
+        subtitle: subtitle || description || '',
+        rack_location: rack_location || '',
+        image_url: imageUrl,
+        last_updated_date: new Date().toISOString().split('T')[0]
+      })
       .select().single();
     if (error) return res.status(500).json({ success: false, message: error.message });
 
-    const { data: newMotif } = await supabase.from('motifs').insert({ catalog_id: newCat.id, code: 'A', name: 'Motif A' }).select().single();
-    const { data: newColor } = await supabase.from('colors').insert({ catalog_id: newCat.id, code: '1', name: 'Warna 1' }).select().single();
-    await supabase.from('stock_items').insert({ catalog_id: newCat.id, motif_id: newMotif.id, color_id: newColor.id, is_ready: 1, notes: 'Init' });
+    // Parse initial motifs (default: ['A'])
+    const motifCodes = initial_motifs ? parseCodeRange(initial_motifs).map(m => m.toUpperCase()) : ['A'];
+    const finalMotifCodes = motifCodes.length > 0 ? motifCodes : ['A'];
+
+    // Parse initial colors (default: ['1'])
+    const colorCodes = initial_colors ? parseCodeRange(initial_colors) : ['1'];
+    const finalColorCodes = colorCodes.length > 0 ? colorCodes : ['1'];
+
+    // Bulk insert motifs
+    const { data: createdMotifs } = await supabase.from('motifs').insert(
+      finalMotifCodes.map(code => ({ catalog_id: newCat.id, code, name: `Motif ${code}` }))
+    ).select();
+
+    // Bulk insert colors
+    const { data: createdColors } = await supabase.from('colors').insert(
+      finalColorCodes.map(code => ({ catalog_id: newCat.id, code, name: `Warna ${code}`, hex_code: '#cbd5e1' }))
+    ).select();
+
+    // Bulk insert stock items
+    if (createdMotifs?.length && createdColors?.length) {
+      const stockItems = [];
+      for (const m of createdMotifs) {
+        for (const c of createdColors) {
+          stockItems.push({
+            catalog_id: newCat.id,
+            motif_id: m.id,
+            color_id: c.id,
+            is_ready: 1,
+            notes: 'Init'
+          });
+        }
+      }
+      await supabase.from('stock_items').insert(stockItems);
+    }
 
     res.status(201).json({ success: true, data: await getCatalogFull(newCat.id) });
   } catch (error) {
@@ -196,29 +280,121 @@ app.delete('/api/catalogs/:id', async (req, res) => {
   res.json({ success: true, message: 'Terhapus' });
 });
 
-// Motif & Color
+// Motif: Support batch add and ranges (e.g. "B, C, D" or "B-D")
 app.post('/api/catalogs/:id/motifs', async (req, res) => {
   const catalogId = Number(req.params.id);
-  const { code, name } = req.body;
-  const upperCode = code.trim().toUpperCase();
-  const { data: newMotif } = await supabase.from('motifs').insert({ catalog_id: catalogId, code: upperCode, name: name || `Motif ${upperCode}` }).select().single();
-  const { data: colors } = await supabase.from('colors').select('*').eq('catalog_id', catalogId);
-  if (colors?.length) {
-    await supabase.from('stock_items').insert(colors.map(c => ({ catalog_id: catalogId, motif_id: newMotif.id, color_id: c.id, is_ready: 1 })));
+  const { code, codes, name } = req.body;
+  
+  let list = [];
+  if (Array.isArray(codes) && codes.length > 0) {
+    list = codes.map(c => String(c).trim().toUpperCase()).filter(Boolean);
+  } else if (code) {
+    list = parseCodeRange(code).map(c => c.toUpperCase());
   }
-  res.status(201).json({ success: true, data: await getCatalogFull(catalogId) });
+
+  if (list.length === 0) {
+    return res.status(400).json({ success: false, message: 'Kode motif wajib diisi' });
+  }
+
+  const { data: existingMotifs } = await supabase.from('motifs').select('code').eq('catalog_id', catalogId);
+  const existingSet = new Set((existingMotifs || []).map(m => String(m.code).toUpperCase()));
+
+  const toInsert = list.filter(c => !existingSet.has(c));
+  if (toInsert.length === 0) {
+    return res.status(400).json({ success: false, message: 'Semua kode motif yang dimasukkan sudah ada di katalog ini' });
+  }
+
+  const { data: newMotifs, error: motifErr } = await supabase.from('motifs')
+    .insert(toInsert.map(c => ({
+      catalog_id: catalogId,
+      code: c,
+      name: name && toInsert.length === 1 ? name : `Motif ${c}`,
+    })))
+    .select();
+
+  if (motifErr) return res.status(500).json({ success: false, message: motifErr.message });
+
+  const { data: colors } = await supabase.from('colors').select('*').eq('catalog_id', catalogId);
+  if (colors?.length && newMotifs?.length) {
+    const stockEntries = [];
+    for (const m of newMotifs) {
+      for (const c of colors) {
+        stockEntries.push({
+          catalog_id: catalogId,
+          motif_id: m.id,
+          color_id: c.id,
+          is_ready: 1
+        });
+      }
+    }
+    await supabase.from('stock_items').insert(stockEntries);
+  }
+
+  res.status(201).json({
+    success: true,
+    addedCount: newMotifs.length,
+    message: `${newMotifs.length} kode motif berhasil ditambahkan`,
+    data: await getCatalogFull(catalogId)
+  });
 });
 
+// Color: Support batch add and ranges (e.g. "1-10" or "1, 2, 3, 4, 5")
 app.post('/api/catalogs/:id/colors', async (req, res) => {
   const catalogId = Number(req.params.id);
-  const { code, name } = req.body;
-  const trimmedCode = code.trim();
-  const { data: newColor } = await supabase.from('colors').insert({ catalog_id: catalogId, code: trimmedCode, name: name || `Warna ${trimmedCode}` }).select().single();
-  const { data: motifs } = await supabase.from('motifs').select('*').eq('catalog_id', catalogId);
-  if (motifs?.length) {
-    await supabase.from('stock_items').insert(motifs.map(m => ({ catalog_id: catalogId, motif_id: m.id, color_id: newColor.id, is_ready: 1 })));
+  const { code, codes, name } = req.body;
+  
+  let list = [];
+  if (Array.isArray(codes) && codes.length > 0) {
+    list = codes.map(c => String(c).trim()).filter(Boolean);
+  } else if (code) {
+    list = parseCodeRange(code);
   }
-  res.status(201).json({ success: true, data: await getCatalogFull(catalogId) });
+
+  if (list.length === 0) {
+    return res.status(400).json({ success: false, message: 'Nomor seri warna wajib diisi' });
+  }
+
+  const { data: existingColors } = await supabase.from('colors').select('code').eq('catalog_id', catalogId);
+  const existingSet = new Set((existingColors || []).map(c => String(c.code).toLowerCase()));
+
+  const toInsert = list.filter(c => !existingSet.has(c.toLowerCase()));
+  if (toInsert.length === 0) {
+    return res.status(400).json({ success: false, message: 'Semua nomor warna yang dimasukkan sudah ada di katalog ini' });
+  }
+
+  const { data: newColors, error: colorErr } = await supabase.from('colors')
+    .insert(toInsert.map(c => ({
+      catalog_id: catalogId,
+      code: c,
+      name: name && toInsert.length === 1 ? name : `Warna ${c}`,
+      hex_code: '#cbd5e1'
+    })))
+    .select();
+
+  if (colorErr) return res.status(500).json({ success: false, message: colorErr.message });
+
+  const { data: motifs } = await supabase.from('motifs').select('*').eq('catalog_id', catalogId);
+  if (motifs?.length && newColors?.length) {
+    const stockEntries = [];
+    for (const m of motifs) {
+      for (const c of newColors) {
+        stockEntries.push({
+          catalog_id: catalogId,
+          motif_id: m.id,
+          color_id: c.id,
+          is_ready: 1
+        });
+      }
+    }
+    await supabase.from('stock_items').insert(stockEntries);
+  }
+
+  res.status(201).json({
+    success: true,
+    addedCount: newColors.length,
+    message: `${newColors.length} nomor seri warna berhasil ditambahkan`,
+    data: await getCatalogFull(catalogId)
+  });
 });
 
 // Stock Toggle
