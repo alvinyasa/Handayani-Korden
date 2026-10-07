@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ModelCard from '../components/ModelCard';
 import AddModelModal from '../components/AddModelModal';
-import { LayoutGrid, Plus, Search, X } from 'lucide-react';
+import { LayoutGrid, Plus, Search, X, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function ModelsPage({
@@ -88,7 +88,7 @@ export default function ModelsPage({
               key={model.id}
               model={model}
               onDelete={onDeleteModel}
-              onPreviewImage={(m) => setPreviewImage(m.activePhoto || m.photo_url || m)}
+              onPreviewImage={(m) => setPreviewImage({ photos: m.photos || [m.activePhoto || m.photo_url], activeIndex: m.activeIndex || 0 })}
             />
           ))}
         </div>
@@ -123,27 +123,77 @@ export default function ModelsPage({
         />
       )}
 
-      {/* Lightbox Modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div className="relative max-w-3xl w-full">
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-            />
+      {/* Lightbox Modal with Carousel */}
+      {previewImage && (() => {
+        const { photos: lbPhotos, activeIndex: lbIdx } = previewImage;
+        const currentUrl = lbPhotos[lbIdx] || lbPhotos[0];
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute -top-12 right-0 text-white/80 hover:text-white p-2"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Photo Counter Badge */}
+              {lbPhotos.length > 1 && (
+                <div className="absolute -top-12 left-0 px-3 py-1 rounded-lg bg-white/15 backdrop-blur-md text-white font-mono font-bold text-xs flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lbIdx + 1} / {lbPhotos.length} Foto</span>
+                </div>
+              )}
+
+              <img
+                src={currentUrl}
+                alt="Preview"
+                className="w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+              />
+
+              {/* Prev / Next Arrows */}
+              {lbPhotos.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setPreviewImage({ ...previewImage, activeIndex: lbIdx > 0 ? lbIdx - 1 : lbPhotos.length - 1 })}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-colors active-press"
+                    title="Foto sebelumnya"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setPreviewImage({ ...previewImage, activeIndex: lbIdx < lbPhotos.length - 1 ? lbIdx + 1 : 0 })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-colors active-press"
+                    title="Foto berikutnya"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Dot Indicators */}
+              {lbPhotos.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  {lbPhotos.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setPreviewImage({ ...previewImage, activeIndex: idx })}
+                      className={`h-2 rounded-full transition-all ${
+                        idx === lbIdx
+                          ? 'w-6 bg-[#d96b27]'
+                          : 'w-2 bg-white/40 hover:bg-white/60'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
