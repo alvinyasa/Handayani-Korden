@@ -92,7 +92,7 @@ export default function AddModelModal({ onClose, onSubmit }) {
                 Tambah Model Korden Baru
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-[#888888] font-medium">
-                Bisa upload beberapa foto sekaligus untuk 1 model
+                Upload foto referensi model korden
               </p>
             </div>
           </div>
@@ -151,9 +151,11 @@ export default function AddModelModal({ onClose, onSubmit }) {
               <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0]">
                 Foto Model Korden <span className="text-rose-500">*</span>
               </label>
-              <span className="text-[11px] text-[#d96b27] dark:text-orange-400 font-bold">
-                {previews.length > 0 ? `${previews.length} Foto Dipilih` : 'Bisa Banyak Foto'}
-              </span>
+              {previews.length > 0 && (
+                <span className="text-[11px] text-[#d96b27] dark:text-orange-400 font-bold">
+                  {previews.length} Foto Dipilih
+                </span>
+              )}
             </div>
 
             {/* Photo Previews Grid */}
@@ -188,10 +190,10 @@ export default function AddModelModal({ onClose, onSubmit }) {
                   <Camera className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-bold text-slate-700 dark:text-[#E0E0E0]">
-                  {previews.length > 0 ? '+ Tambah Foto Lainnya' : 'Pilih Foto (Bisa Banyak Sekaligus)'}
+                  {previews.length > 0 ? '+ Tambah Foto Lainnya' : 'Pilih Foto'}
                 </span>
                 <span className="text-[11px] text-slate-400 dark:text-[#888888] mt-0.5">
-                  Bisa pilih beberapa gambar dari galeri HP / Kamera
+                  Format: JPG, PNG, WEBP
                 </span>
               </div>
               <input
