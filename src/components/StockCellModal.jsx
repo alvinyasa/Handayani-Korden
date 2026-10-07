@@ -11,6 +11,7 @@ import {
   Calendar,
   AlertCircle
 } from 'lucide-react';
+import { parsePhotoUrls } from '../utils/photoUtils';
 
 export default function StockCellModal({
   data,
@@ -198,18 +199,27 @@ export default function StockCellModal({
 
             {variantPhotos.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
-                {variantPhotos.map((photo) => (
-                  <div
-                    key={photo.id}
-                    onClick={() => setSelectedImage(photo.photo_url)}
-                    className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] cursor-pointer group bg-slate-100 dark:bg-[#2A2A2A]"
-                  >
-                    <img src={photo.photo_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Maximize2 className="w-4 h-4 text-white" />
+                {variantPhotos.map((photo) => {
+                  const urls = parsePhotoUrls(photo.photo_url);
+                  const displayUrl = urls[0] || photo.photo_url;
+                  return (
+                    <div
+                      key={photo.id}
+                      onClick={() => setSelectedImage(displayUrl)}
+                      className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] cursor-pointer group bg-slate-100 dark:bg-[#2A2A2A]"
+                    >
+                      <img src={displayUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      {urls.length > 1 && (
+                        <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-white shadow-xs">
+                          {urls.length} Foto
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Maximize2 className="w-4 h-4 text-white" />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-[#444444] bg-slate-50/50 dark:bg-[#2A2A2A]/40 text-center">

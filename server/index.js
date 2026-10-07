@@ -493,14 +493,35 @@ app.get('/api/models', async (req, res) => {
   res.json({ success: true, data: data || [] });
 });
 
-app.post('/api/models', upload.single('photo'), async (req, res) => {
+app.post('/api/models', upload.any(), async (req, res) => {
   try {
     const { title, notes, category } = req.body;
-    const photoUrl = req.file ? await uploadToSupabaseStorage(req.file, 'models') : req.body.photo_url;
+    const files = req.files || (req.file ? [req.file] : []);
     
-    if (!photoUrl) return res.status(400).json({ success: false, message: 'Foto model wajib diupload' });
+    const photoUrls = [];
+    for (const file of files) {
+      const url = await uploadToSupabaseStorage(file, 'models');
+      if (url) photoUrls.push(url);
+    }
 
-    const { data } = await supabase.from('curtain_models').insert({ title: title.trim(), photo_url: photoUrl, notes: notes || '', category: category || 'Gorden Utama' }).select().single();
+    if (req.body.photo_url) {
+      photoUrls.push(req.body.photo_url);
+    }
+    
+    if (photoUrls.length === 0) {
+      return res.status(400).json({ success: false, message: 'Foto model wajib diupload' });
+    }
+
+    const finalPhotoUrl = photoUrls.length === 1 ? photoUrls[0] : JSON.stringify(photoUrls);
+
+    const { data, error } = await supabase.from('curtain_models').insert({
+      title: title ? title.trim() : 'Model Korden',
+      photo_url: finalPhotoUrl,
+      notes: notes || '',
+      category: category || 'Gorden Utama'
+    }).select().single();
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
     res.status(201).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -520,16 +541,38 @@ app.get('/api/installations', async (req, res) => {
   res.json({ success: true, data: photos });
 });
 
-app.post('/api/installations', upload.single('photo'), async (req, res) => {
+app.post('/api/installations', upload.any(), async (req, res) => {
   try {
     const { catalog_name, catalog_id, caption, room_type } = req.body;
     let catName = (catalog_name || '').trim();
     const catId = catalog_id ? Number(catalog_id) : 0;
     
-    const photoUrl = req.file ? await uploadToSupabaseStorage(req.file, 'installations') : req.body.photo_url;
-    if (!photoUrl) return res.status(400).json({ success: false, message: 'Foto pemasangan wajib diupload' });
+    const files = req.files || (req.file ? [req.file] : []);
+    const photoUrls = [];
+    for (const file of files) {
+      const url = await uploadToSupabaseStorage(file, 'installations');
+      if (url) photoUrls.push(url);
+    }
 
-    const { data } = await supabase.from('installation_photos').insert({ catalog_name: catName, catalog_id: catId, photo_url: photoUrl, caption: caption || '', room_type: room_type || '' }).select().single();
+    if (req.body.photo_url) {
+      photoUrls.push(req.body.photo_url);
+    }
+
+    if (photoUrls.length === 0) {
+      return res.status(400).json({ success: false, message: 'Foto pemasangan wajib diupload' });
+    }
+
+    const finalPhotoUrl = photoUrls.length === 1 ? photoUrls[0] : JSON.stringify(photoUrls);
+
+    const { data, error } = await supabase.from('installation_photos').insert({
+      catalog_name: catName,
+      catalog_id: catId,
+      photo_url: finalPhotoUrl,
+      caption: caption || '',
+      room_type: room_type || ''
+    }).select().single();
+
+    if (error) return res.status(500).json({ success: false, message: error.message });
     res.status(201).json({ success: true, data: { ...data, catalog_name: data.catalog_name || 'Umum' } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

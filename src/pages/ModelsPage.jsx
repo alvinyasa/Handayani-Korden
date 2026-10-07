@@ -88,7 +88,7 @@ export default function ModelsPage({
               key={model.id}
               model={model}
               onDelete={onDeleteModel}
-              onPreviewImage={(m) => setPreviewImage(m.photo_url)}
+              onPreviewImage={(m) => setPreviewImage(m.activePhoto || m.photo_url || m)}
             />
           ))}
         </div>

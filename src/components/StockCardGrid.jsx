@@ -192,7 +192,7 @@ export default function StockCardGrid({
               title="Tambah Katalog Kain Baru"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Tambah Katalog</span>
+              <span>Tambah Katalog</span>
             </button>
           )}
         </div>

@@ -136,7 +136,7 @@ export default function InstallationsPage({
               key={photo.id}
               photo={photo}
               onDelete={onDeleteInstallation}
-              onPreviewImage={(p) => setPreviewImage(p.photo_url)}
+              onPreviewImage={(p) => setPreviewImage(p.activePhoto || p.photo_url || p)}
             />
           ))}
         </div>

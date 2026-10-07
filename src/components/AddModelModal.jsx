@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
-import { X, Camera, LayoutGrid } from 'lucide-react';
+import { X, Camera, LayoutGrid, Plus, Image as ImageIcon } from 'lucide-react';
 
 export default function AddModelModal({ onClose, onSubmit }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Gorden Utama');
   const [notes, setNotes] = useState('');
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (selected) {
-      setFile(selected);
-      setPreview(URL.createObjectURL(selected));
-    }
+  const handleFilesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const newFiles = [...selectedFiles, ...files];
+    setSelectedFiles(newFiles);
+
+    const newPreviews = files.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    setPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removePhoto = (index) => {
+    const updatedFiles = selectedFiles.filter((_, idx) => idx !== index);
+    const updatedPreviews = previews.filter((_, idx) => idx !== index);
+    setSelectedFiles(updatedFiles);
+    setPreviews(updatedPreviews);
   };
 
   const handleSubmit = async (e) => {
@@ -24,8 +37,8 @@ export default function AddModelModal({ onClose, onSubmit }) {
       setError('Nama model korden wajib diisi');
       return;
     }
-    if (!file) {
-      setError('Foto model korden wajib diupload');
+    if (selectedFiles.length === 0) {
+      setError('Minimal upload 1 foto model korden');
       return;
     }
 
@@ -36,7 +49,11 @@ export default function AddModelModal({ onClose, onSubmit }) {
     formData.append('title', title.trim());
     formData.append('category', category);
     formData.append('notes', notes.trim());
-    formData.append('photo', file);
+
+    // Append all selected photos
+    selectedFiles.forEach((f) => {
+      formData.append('photos', f);
+    });
 
     const res = await onSubmit(formData);
     setLoading(false);
@@ -75,7 +92,7 @@ export default function AddModelModal({ onClose, onSubmit }) {
                 Tambah Model Korden Baru
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-[#888888] font-medium">
-                Referensi model jahitan & bentuk korden
+                Bisa upload beberapa foto sekaligus untuk 1 model
               </p>
             </div>
           </div>
@@ -128,38 +145,60 @@ export default function AddModelModal({ onClose, onSubmit }) {
             </select>
           </div>
 
-          {/* Photo Upload Box */}
+          {/* Multiple Photos Upload Box */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0] mb-1.5">
-              Foto Model Korden <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0]">
+                Foto Model Korden <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] text-[#d96b27] dark:text-orange-400 font-bold">
+                {previews.length > 0 ? `${previews.length} Foto Dipilih` : 'Bisa Banyak Foto'}
+              </span>
+            </div>
+
+            {/* Photo Previews Grid */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-2.5">
+                {previews.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-4/3 rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] bg-slate-100 dark:bg-[#2A2A2A] group"
+                  >
+                    <img src={item.url} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(idx)}
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-md hover:bg-rose-700 transition-colors"
+                      title="Hapus foto ini"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/60 text-[9px] font-bold text-white">
+                      {idx === 0 ? 'Utama' : `#${idx + 1}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Button Box */}
             <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 dark:border-[#444444] rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-[#333333] transition-colors group">
-              {preview ? (
-                <div className="w-full h-44 rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] relative">
-                  <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-white text-xs font-bold px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-xs">
-                      Ganti Foto
-                    </span>
-                  </div>
+              <div className="flex flex-col items-center py-2">
+                <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-950/60 text-[#d96b27] dark:text-orange-400 flex items-center justify-center mb-1.5 border border-orange-200/50 dark:border-orange-900/50 group-hover:scale-105 transition-transform">
+                  <Camera className="w-5 h-5" />
                 </div>
-              ) : (
-                <div className="flex flex-col items-center py-4">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-950/60 text-[#d96b27] dark:text-orange-400 flex items-center justify-center mb-2 border border-orange-200/50 dark:border-orange-900/50 group-hover:scale-105 transition-transform">
-                    <Camera className="w-6 h-6" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-700 dark:text-[#E0E0E0]">
-                    Upload Foto Model Korden
-                  </span>
-                  <span className="text-[11px] text-slate-400 dark:text-[#888888] mt-0.5">
-                    Ambil langsung dari kamera atau pilih file galeri
-                  </span>
-                </div>
-              )}
+                <span className="text-xs font-bold text-slate-700 dark:text-[#E0E0E0]">
+                  {previews.length > 0 ? '+ Tambah Foto Lainnya' : 'Pilih Foto (Bisa Banyak Sekaligus)'}
+                </span>
+                <span className="text-[11px] text-slate-400 dark:text-[#888888] mt-0.5">
+                  Bisa pilih beberapa gambar dari galeri HP / Kamera
+                </span>
+              </div>
               <input
                 type="file"
+                multiple
                 accept="image/*"
-                onChange={handleFileChange}
+                onChange={handleFilesChange}
                 className="hidden"
               />
             </label>
@@ -190,10 +229,10 @@ export default function AddModelModal({ onClose, onSubmit }) {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || selectedFiles.length === 0}
               className="flex-1 py-3 px-4 rounded-xl bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold shadow-md shadow-orange-600/20 active-press disabled:opacity-50 transition-colors"
             >
-              {loading ? 'Menyimpan...' : 'Simpan Model'}
+              {loading ? 'Menyimpan...' : `Simpan Model (${selectedFiles.length} Foto)`}
             </button>
           </div>
         </form>
