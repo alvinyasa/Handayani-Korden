@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   Search,
@@ -11,7 +11,9 @@ import {
   Plus,
   Trash2,
   Edit,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function StockCardGrid({
@@ -25,6 +27,18 @@ export default function StockCardGrid({
   installationPhotos = [],
 }) {
   const { canEdit, isAdmin } = useAuth();
+
+  // Horizontal chips scroll ref
+  const catalogChipsRef = useRef(null);
+
+  const scrollChips = (direction) => {
+    if (catalogChipsRef.current) {
+      catalogChipsRef.current.scrollBy({
+        left: direction === 'left' ? -220 : 220,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,7 +119,7 @@ export default function StockCardGrid({
 
   return (
     <div className="space-y-3.5 pb-6">
-      {/* 1. Top Search Bar & Stat Pills */}
+      {/* 1. Top Search Bar, Stat Pills & Tambah Katalog */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
         {/* Search Bar Input */}
         <div className="relative flex-1">
@@ -127,7 +141,7 @@ export default function StockCardGrid({
           )}
         </div>
 
-        {/* Stat Filter Badges */}
+        {/* Stat Filter Badges + Tambah Katalog */}
         <div className="flex items-center space-x-1.5 shrink-0 self-start sm:self-auto overflow-x-auto no-scrollbar">
           {/* Semua */}
           <button
@@ -169,56 +183,88 @@ export default function StockCardGrid({
             <span>Kosong</span>
             <span className="font-mono ml-0.5 font-extrabold">{totalKosong}</span>
           </button>
+
+          {/* Tambah Katalog (di sebelah kanan Kosong) */}
+          {canEdit && (
+            <button
+              onClick={onOpenAddCatalog}
+              className="px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-[#d96b27] hover:bg-[#c25a1d] text-white shadow-sm flex items-center space-x-1 active-press transition-colors shrink-0"
+              title="Tambah Katalog Kain Baru"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Tambah Katalog</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 2. Horizontal Catalog Filter Chips */}
-      <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs">
-        <div className="flex items-center space-x-1 text-slate-500 dark:text-[#888888] font-bold px-1 shrink-0">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 dark:text-[#888888]" />
-          <span>Katalog:</span>
-        </div>
-
-        {/* Chip 'Semua' */}
+      {/* 2. Horizontal Catalog Filter Chips with PC Scroll buttons & Mouse Wheel */}
+      <div className="relative flex items-center">
+        {/* Left Arrow (Desktop / PC) */}
         <button
-          onClick={() => setSelectedCatalogFilter('Semua')}
-          className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press ${
-            selectedCatalogFilter === 'Semua'
-              ? 'bg-[#d96b27] text-white shadow-sm'
-              : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-[#B0B0B0] border border-slate-200 dark:border-[#444444] hover:bg-slate-50 dark:hover:bg-[#333333]'
-          }`}
+          type="button"
+          onClick={() => scrollChips('left')}
+          className="hidden sm:flex absolute left-0 z-10 w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] -translate-x-1.5 transition-all active:scale-95 shrink-0"
+          title="Geser katalog ke kiri"
         >
-          Semua
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Dynamic Catalog Chips */}
-        {catalogs.map((cat) => {
-          const isActive = selectedCatalogFilter.toLowerCase() === cat.name.toLowerCase();
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCatalogFilter(cat.name)}
-              className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press ${
-                isActive
-                  ? 'bg-[#d96b27] text-white shadow-sm'
-                  : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-[#B0B0B0] border border-slate-200 dark:border-[#444444] hover:bg-slate-50 dark:hover:bg-[#333333]'
-              }`}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
+        {/* Scrollable Chips Row */}
+        <div
+          ref={catalogChipsRef}
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
+          className="flex items-center space-x-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs scroll-smooth flex-1 px-1 sm:px-6"
+        >
+          <div className="flex items-center space-x-1 text-slate-500 dark:text-[#888888] font-bold px-1 shrink-0">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 dark:text-[#888888]" />
+            <span>Katalog:</span>
+          </div>
 
-        {/* Admin Add Catalog Button */}
-        {canEdit && (
+          {/* Chip 'Semua' */}
           <button
-            onClick={onOpenAddCatalog}
-            className="px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 border border-orange-200 dark:border-orange-900/50 hover:bg-orange-100 flex items-center space-x-1 active-press"
+            onClick={() => setSelectedCatalogFilter('Semua')}
+            className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press shrink-0 ${
+              selectedCatalogFilter === 'Semua'
+                ? 'bg-[#d96b27] text-white shadow-sm'
+                : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-[#B0B0B0] border border-slate-200 dark:border-[#444444] hover:bg-slate-50 dark:hover:bg-[#333333]'
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Katalog Baru</span>
+            Semua
           </button>
-        )}
+
+          {/* Dynamic Catalog Chips */}
+          {catalogs.map((cat) => {
+            const isActive = selectedCatalogFilter.toLowerCase() === cat.name.toLowerCase();
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCatalogFilter(cat.name)}
+                className={`px-3.5 py-1.5 rounded-full font-bold whitespace-nowrap transition-all active-press shrink-0 ${
+                  isActive
+                    ? 'bg-[#d96b27] text-white shadow-sm'
+                    : 'bg-white dark:bg-[#1E1E1E] text-slate-600 dark:text-[#B0B0B0] border border-slate-200 dark:border-[#444444] hover:bg-slate-50 dark:hover:bg-[#333333]'
+                }`}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Arrow (Desktop / PC) */}
+        <button
+          type="button"
+          onClick={() => scrollChips('right')}
+          className="hidden sm:flex absolute right-0 z-10 w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] translate-x-1.5 transition-all active:scale-95 shrink-0"
+          title="Geser katalog ke kanan"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 3. Catalog Cards Grid */}
@@ -307,15 +353,24 @@ export default function StockCardGrid({
 
                   return (
                     <div key={pairIdx} className="w-full">
-                      {/* Sub-header Row (Warm Amber Background) */}
-                      <div className="grid grid-cols-4 bg-[#faecd8] dark:bg-amber-950/40 text-slate-800 dark:text-amber-200 text-xs font-bold text-center border-b border-slate-200 dark:border-[#444444] py-1.5 px-2">
-                        <div className="font-mono text-slate-900 dark:text-[#E0E0E0]">{motifA?.code || '-'}</div>
-                        <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">status</div>
-                        <div className="font-mono text-slate-900 dark:text-[#E0E0E0]">{motifB ? motifB.code : ''}</div>
-                        <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">
-                          {motifB ? 'status' : ''}
+                      {/* Sub-header Row */}
+                      {motifB ? (
+                        <div className="grid grid-cols-4 bg-[#faecd8] dark:bg-amber-950/40 text-slate-800 dark:text-amber-200 text-xs font-bold text-center border-b border-slate-200 dark:border-[#444444] py-1.5 px-2">
+                          <div className="font-mono text-slate-900 dark:text-[#E0E0E0]">{motifA?.code || '-'}</div>
+                          <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">status</div>
+                          <div className="font-mono text-slate-900 dark:text-[#E0E0E0]">{motifB.code}</div>
+                          <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">status</div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="grid grid-cols-2 max-w-[280px] mx-auto bg-[#faecd8] dark:bg-amber-950/40 text-slate-800 dark:text-amber-200 text-xs font-bold text-center border-b border-slate-200 dark:border-[#444444] py-1.5 px-3">
+                          <div className="font-mono text-slate-900 dark:text-[#E0E0E0]">
+                            {motifA?.code ? `Motif ${motifA.code}` : 'No. Warna'}
+                          </div>
+                          <div className="text-[11px] font-semibold text-slate-600 dark:text-amber-300/80">
+                            Status
+                          </div>
+                        </div>
+                      )}
 
                       {/* Rows for each color index */}
                       <div className="divide-y divide-slate-100 dark:divide-[#444444]">
@@ -326,7 +381,7 @@ export default function StockCardGrid({
                           const itemB = motifB ? matrix[motifB.id]?.[color.id] : null;
                           const isReadyB = itemB ? Number(itemB.is_ready) === 1 : false;
 
-                          return (
+                          return motifB ? (
                             <div
                               key={color.id}
                               className="grid grid-cols-4 items-center py-1.5 px-2 text-center text-xs hover:bg-slate-50/70 dark:hover:bg-[#333333] transition-colors"
@@ -366,49 +421,80 @@ export default function StockCardGrid({
                                 </button>
                               </div>
 
-                              {/* Motif B: Color Number (if exists) */}
-                              {motifB ? (
-                                <>
-                                  <div
-                                    onClick={() =>
-                                      onSelectCell({
-                                        catalog,
-                                        motif: motifB,
-                                        color,
-                                        item: itemB,
-                                      })
-                                    }
-                                    className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
-                                  >
-                                    {color.code}
-                                  </div>
+                              {/* Motif B: Color Number */}
+                              <div
+                                onClick={() =>
+                                  onSelectCell({
+                                    catalog,
+                                    motif: motifB,
+                                    color,
+                                    item: itemB,
+                                  })
+                                }
+                                className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
+                              >
+                                {color.code}
+                              </div>
 
-                                  {/* Motif B: Status Capsule Button */}
-                                  <div className="flex justify-center px-1">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => handleToggleClick(e, catalog, motifB, color, itemB)}
-                                      className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
-                                        isReadyB
-                                          ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
-                                          : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
-                                      }`}
-                                      title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
-                                    >
-                                      {isReadyB ? (
-                                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                      ) : (
-                                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                                      )}
-                                    </button>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div></div>
-                                  <div></div>
-                                </>
-                              )}
+                              {/* Motif B: Status Capsule Button */}
+                              <div className="flex justify-center px-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleToggleClick(e, catalog, motifB, color, itemB)}
+                                  className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
+                                    isReadyB
+                                      ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
+                                      : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
+                                  }`}
+                                  title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
+                                >
+                                  {isReadyB ? (
+                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  ) : (
+                                    <X className="w-3.5 h-3.5 stroke-[3]" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              key={color.id}
+                              className="grid grid-cols-2 max-w-[280px] mx-auto items-center py-1.5 px-3 text-center text-xs hover:bg-slate-50/70 dark:hover:bg-[#333333] transition-colors"
+                            >
+                              {/* Single Motif: Centered Color Number */}
+                              <div
+                                onClick={() =>
+                                  onSelectCell({
+                                    catalog,
+                                    motif: motifA,
+                                    color,
+                                    item: itemA,
+                                  })
+                                }
+                                className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
+                              >
+                                {color.code}
+                              </div>
+
+                              {/* Single Motif: Centered Status Capsule Button */}
+                              <div className="flex justify-center px-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleToggleClick(e, catalog, motifA, color, itemA)}
+                                  className={`w-full max-w-[64px] py-1 px-2.5 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
+                                    isReadyA
+                                      ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
+                                      : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
+                                  }`}
+                                  title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
+                                >
+                                  {isReadyA ? (
+                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  ) : (
+                                    <X className="w-3.5 h-3.5 stroke-[3]" />
+                                  )}
+                                </button>
+                              </div>
                             </div>
                           );
                         })}

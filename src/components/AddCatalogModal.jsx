@@ -274,3 +274,4 @@ export default function AddCatalogModal({ onClose, onSubmit }) {
     </div>
   );
 }
+
