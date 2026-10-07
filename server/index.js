@@ -342,6 +342,40 @@ app.post('/api/catalogs/:id/motifs', async (req, res) => {
   });
 });
 
+app.delete('/api/motifs/:id', async (req, res) => {
+  try {
+    const motifId = Number(req.params.id);
+    const { data: motif, error: findErr } = await supabase
+      .from('motifs')
+      .select('catalog_id, code')
+      .eq('id', motifId)
+      .single();
+
+    if (findErr || !motif) {
+      return res.status(404).json({ success: false, message: 'Motif tidak ditemukan' });
+    }
+
+    const catalogId = motif.catalog_id;
+
+    // Delete associated stock_items for this motif
+    await supabase.from('stock_items').delete().eq('motif_id', motifId);
+
+    // Unlink any installation photos with this motif
+    await supabase.from('installation_photos').update({ motif_id: null }).eq('motif_id', motifId);
+
+    // Delete motif
+    const { error: delErr } = await supabase.from('motifs').delete().eq('id', motifId);
+    if (delErr) {
+      return res.status(500).json({ success: false, message: delErr.message });
+    }
+
+    const updatedCatalog = await getCatalogFull(catalogId);
+    res.json({ success: true, message: `Motif ${motif.code} berhasil dihapus`, data: updatedCatalog });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Color: Support batch add and ranges (e.g. "1-10" or "1, 2, 3, 4, 5")
 app.post('/api/catalogs/:id/colors', async (req, res) => {
   const catalogId = Number(req.params.id);
@@ -399,6 +433,40 @@ app.post('/api/catalogs/:id/colors', async (req, res) => {
     message: `${newColors.length} nomor seri warna berhasil ditambahkan`,
     data: await getCatalogFull(catalogId)
   });
+});
+
+app.delete('/api/colors/:id', async (req, res) => {
+  try {
+    const colorId = Number(req.params.id);
+    const { data: color, error: findErr } = await supabase
+      .from('colors')
+      .select('catalog_id, code')
+      .eq('id', colorId)
+      .single();
+
+    if (findErr || !color) {
+      return res.status(404).json({ success: false, message: 'Warna tidak ditemukan' });
+    }
+
+    const catalogId = color.catalog_id;
+
+    // Delete associated stock_items for this color
+    await supabase.from('stock_items').delete().eq('color_id', colorId);
+
+    // Unlink any installation photos with this color
+    await supabase.from('installation_photos').update({ color_id: null }).eq('color_id', colorId);
+
+    // Delete color
+    const { error: delErr } = await supabase.from('colors').delete().eq('id', colorId);
+    if (delErr) {
+      return res.status(500).json({ success: false, message: delErr.message });
+    }
+
+    const updatedCatalog = await getCatalogFull(catalogId);
+    res.json({ success: true, message: `Nomor warna ${color.code} berhasil dihapus`, data: updatedCatalog });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 // Stock Toggle

@@ -8,7 +8,6 @@ import {
   Palette,
   Edit3,
   Check,
-  MapPin,
   Tag,
   Sparkles
 } from 'lucide-react';
@@ -32,7 +31,6 @@ export default function EditCatalogModal({
   // Info Tab fields
   const [name, setName] = useState(catalog.name || '');
   const [subtitle, setSubtitle] = useState(catalog.subtitle || catalog.description || '');
-  const [rackLocation, setRackLocation] = useState(catalog.rack_location || '');
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
   // New Motif fields
@@ -60,7 +58,6 @@ export default function EditCatalogModal({
       name: name.trim(),
       subtitle: subtitle.trim(),
       description: subtitle.trim(),
-      rack_location: rackLocation.trim(),
       last_updated_date: new Date().toISOString().split('T')[0],
     });
 
@@ -299,22 +296,6 @@ export default function EditCatalogModal({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-[#B0B0B0] mb-1.5">
-                  Lokasi Rak Gudang
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-400 dark:text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={rackLocation}
-                    onChange={(e) => setRackLocation(e.target.value)}
-                    placeholder="Contoh: Rak M-01, Rak D-02"
-                    className="w-full text-xs pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-[#444444] bg-slate-50 dark:bg-[#2A2A2A] text-slate-900 dark:text-[#E0E0E0] placeholder:text-slate-400 dark:placeholder:text-[#888888] focus:bg-white dark:focus:bg-[#2A2A2A] focus:ring-2 focus:ring-orange-500/20 focus:border-[#d96b27] focus:outline-none font-medium transition-all"
-                  />
-                </div>
-              </div>
-
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
@@ -458,16 +439,14 @@ export default function EditCatalogModal({
                         </div>
                       </div>
 
-                      {catalog.motifs?.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteMotif(motif.id, motif.code)}
-                          className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                          title="Hapus Motif"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => onDeleteMotif(motif.id, motif.code)}
+                        className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title={`Hapus Motif ${motif.code}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -607,16 +586,14 @@ export default function EditCatalogModal({
                         </span>
                       </div>
 
-                      {catalog.colors.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteColor(col.id, col.code)}
-                          className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
-                          title="Hapus Warna"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => onDeleteColor(col.id, col.code)}
+                        className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0"
+                        title={`Hapus Warna ${col.code}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   ))}
                 </div>

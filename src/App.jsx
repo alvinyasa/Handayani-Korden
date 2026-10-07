@@ -249,6 +249,8 @@ function AppContent() {
         showToast(`Motif ${motifCode} dihapus`);
         const statsRes = await fetchStats();
         if (statsRes.success) setStats(statsRes.data);
+      } else {
+        showToast(res?.message || 'Gagal menghapus motif', 'error');
       }
     } catch (err) {
       showToast('Gagal menghapus motif', 'error');
@@ -285,6 +287,8 @@ function AppContent() {
         showToast(`Warna ${colorCode} dihapus`);
         const statsRes = await fetchStats();
         if (statsRes.success) setStats(statsRes.data);
+      } else {
+        showToast(res?.message || 'Gagal menghapus warna', 'error');
       }
     } catch (err) {
       showToast('Gagal menghapus warna', 'error');

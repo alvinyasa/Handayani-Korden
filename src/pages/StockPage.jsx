@@ -104,6 +104,10 @@ export default function StockPage({
           onClose={() => setShowAddCatalog(false)}
           onSubmit={async (formData) => {
             const res = await onCreateCatalog(formData);
+            if (res && res.success && res.data) {
+              setShowAddCatalog(false);
+              setEditingCatalog(res.data);
+            }
             return res;
           }}
         />
