@@ -73,14 +73,12 @@ export default function Navbar({ onNavigateToAdmin, onLogout }) {
           {/* User Role Status Badge */}
           {isAdmin ? (
             <div className="flex items-center space-x-1.5">
-              <button
-                onClick={onNavigateToAdmin}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-orange-200/80 dark:border-[#444444] bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 text-xs font-bold active-press shadow-xs"
-                title="Panel Admin"
+              <div
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-orange-200/80 dark:border-[#444444] bg-orange-50 dark:bg-orange-950/40 text-[#d96b27] dark:text-orange-400 text-xs font-bold shadow-xs"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#d96b27] dark:text-orange-400" />
                 <span className="truncate max-w-[70px] sm:max-w-none">Admin</span>
-              </button>
+              </div>
               <button
                 onClick={onLogout}
                 className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-[#444444] active-press transition-colors"

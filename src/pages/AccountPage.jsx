@@ -38,7 +38,7 @@ export default function AccountPage({ stats, onNavigateToAdmin }) {
 
           <div className="flex-1 min-w-0">
             <h2 className="font-extrabold text-base text-slate-900 dark:text-[#E0E0E0] truncate">
-              {isAdmin ? 'Manyu (SPV / Kepala Toko)' : 'Teknisi Lapangan'}
+              {isAdmin ? 'Admin (SPV / Kepala Toko)' : 'Teknisi Lapangan'}
             </h2>
             <div className="flex items-center space-x-1.5 mt-0.5">
               <span
@@ -176,7 +176,7 @@ export default function AccountPage({ stats, onNavigateToAdmin }) {
             <strong>URL Teknisi (Utama):</strong> <code>/</code> (Lihat stok, model & foto pemasangan).
           </li>
           <li>
-            <strong>URL Admin:</strong> <code>/admin</code> (Akun: <code>manyu</code>, Sandi: <code>sk21korden</code>).
+            <strong>URL Admin:</strong> <code>/admin</code> (Akses khusus pengelola stok).
           </li>
           <li>
             <strong>Full Akses:</strong> Admin dapat mengubah status stok, menambah katalog baru, serta mengunggah foto.

@@ -366,7 +366,7 @@ function AppContent() {
         <AdminLoginPage
           onNavigateToApp={(targetTab) => {
             navigateTo('app', targetTab);
-            showToast('Selamat datang, Admin Manyu!');
+            showToast('Selamat datang, Admin!');
           }}
         />
         {/* Toast */}
