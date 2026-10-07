@@ -74,9 +74,14 @@ export default function AccountPage({ stats, onNavigateToAdmin }) {
 
         <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-[#444444] text-xs text-slate-600 dark:text-[#B0B0B0]">
           {isAdmin ? (
-            <p className="text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
-              ✓ Anda memiliki <strong>Akses Penuh (Full Akses CRUD)</strong> untuk mengubah status stok Ready/Kosong dengan 1-tap, menambah katalog/motif/warna, serta mengunggah foto model dan foto pemasangan.
-            </p>
+            <div className="space-y-2">
+              <p className="text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
+                ✓ Anda memiliki <strong>Akses Penuh (Full Akses CRUD)</strong> untuk mengubah status stok Ready/Kosong dengan 1-tap, menambah katalog/motif/warna, serta mengunggah foto model dan foto pemasangan.
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-[#888888] font-medium flex items-center justify-between px-1">
+                <span>⏱️ Durasi Sesi Admin: <strong>25 Menit</strong> (Otomatis logout jika tidak ada aktivitas)</span>
+              </p>
+            </div>
           ) : (
             <div>
               <p className="text-slate-500 dark:text-[#B0B0B0] leading-relaxed">

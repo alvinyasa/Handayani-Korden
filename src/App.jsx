@@ -30,7 +30,7 @@ import {
 import { CheckCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 function AppContent() {
-  const { canEdit, isAdmin, user, logout } = useAuth();
+  const { canEdit, isAdmin, user, logout, sessionExpiredToast, clearSessionExpiredToast } = useAuth();
 
   // Route State: 'app' (main mobile view) | 'admin' (dedicated /admin page)
   const [route, setRoute] = useState(() => {
@@ -54,10 +54,18 @@ function AppContent() {
   // Toast notification
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
 
-  const showToast = (message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+    setTimeout(() => setToast(null), 3500);
+  }, []);
+
+  // Handle session timeout notification
+  useEffect(() => {
+    if (sessionExpiredToast) {
+      showToast('Sesi Admin telah berakhir (25 menit). Silakan login kembali.', 'error');
+      clearSessionExpiredToast();
+    }
+  }, [sessionExpiredToast, clearSessionExpiredToast, showToast]);
 
   // Browser History & URL syncing
   useEffect(() => {
