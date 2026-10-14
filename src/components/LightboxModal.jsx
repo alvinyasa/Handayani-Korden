@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 
 export default function LightboxModal({ photos = [], activeIndex = 0, onClose, onIndexChange }) {
   const [currentIdx, setCurrentIdx] = useState(activeIndex);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+
+  // Lock body scroll when lightbox is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const activePhotoList = Array.isArray(photos) && photos.length > 0 ? photos : [];
   const currentUrl = activePhotoList[currentIdx] || activePhotoList[0] || '';
@@ -51,9 +61,20 @@ export default function LightboxModal({ photos = [], activeIndex = 0, onClose, o
     setTouchEnd(null);
   };
 
-  return (
+  const content = (
     <div
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
+      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 9999,
+        margin: 0,
+      }}
       onClick={onClose}
     >
       <div className="relative max-w-3xl w-full flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -142,4 +163,6 @@ export default function LightboxModal({ photos = [], activeIndex = 0, onClose, o
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(content, document.body) : content;
 }

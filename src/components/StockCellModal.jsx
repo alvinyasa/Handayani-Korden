@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   X,
@@ -31,6 +32,15 @@ export default function StockCellModal({
   const [isSaving, setIsSaving] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   // Filter installation photos for this specific variant
   const variantPhotos = installationPhotos.filter(
     (p) =>
@@ -52,8 +62,21 @@ export default function StockCellModal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-backdrop">
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-backdrop"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 9999,
+        margin: 0,
+      }}
+    >
       <div className="w-full max-w-lg bg-white dark:bg-[#1E1E1E] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-[#444444] overflow-hidden animate-bottom-sheet max-h-[92vh] flex flex-col">
         {/* Mobile Swipe / Drag Handle Indicator */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-[#333333] rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
@@ -169,8 +192,8 @@ export default function StockCellModal({
             )}
           </div>
 
-          {/* Linked Photos (Hanya untuk Admin / Bukan Teknisi) */}
-          {!isTeknisi && canEdit && (
+          {/* Linked Photos (Bukan Teknisi) */}
+          {!isTeknisi && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-1.5">
@@ -180,22 +203,24 @@ export default function StockCellModal({
                   </h4>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenUploadPhoto({
-                      catalog_id: catalog.id,
-                      catalog_name: catalog.name,
-                      motif_id: motif.id,
-                      color_id: color.id,
-                    });
-                  }}
-                  className="text-[11px] font-bold text-[#d96b27] dark:text-orange-400 hover:underline flex items-center space-x-1 active-press"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Upload Foto</span>
-                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenUploadPhoto({
+                        catalog_id: catalog.id,
+                        catalog_name: catalog.name,
+                        motif_id: motif.id,
+                        color_id: color.id,
+                      });
+                    }}
+                    className="text-[11px] font-bold text-[#d96b27] dark:text-orange-400 hover:underline flex items-center space-x-1 active-press"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Upload Foto</span>
+                  </button>
+                )}
               </div>
 
               {variantPhotos.length > 0 ? (
@@ -258,7 +283,18 @@ export default function StockCellModal({
       {/* Lightbox Preview */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-60 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
+          className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 10000,
+            margin: 0,
+          }}
           onClick={() => setSelectedImage(null)}
         >
           <div className="relative max-w-2xl w-full">
@@ -274,4 +310,6 @@ export default function StockCellModal({
       )}
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }

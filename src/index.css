@@ -9,8 +9,20 @@
     -moz-osx-font-smoothing: grayscale;
   }
   
+  html, body {
+    margin: 0 !important;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+  }
+
   html {
     scroll-behavior: smooth;
+    background-color: #f8fafc;
+  }
+
+  html.dark {
+    background-color: #121212;
   }
 
   body {
@@ -22,6 +34,15 @@
   .dark body {
     background-color: #121212;
     color: #E0E0E0;
+  }
+
+  /* Ensure all fixed backdrop overlays cover the full screen edge-to-edge without any gaps */
+  .fixed.inset-0 {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    margin: 0 !important;
   }
 
   /* All borders and dividers in dark mode → #444444 */
