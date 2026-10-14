@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { parsePhotoUrls } from '../utils/photoUtils';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import LightboxModal from './LightboxModal';
 
 export default function StockCellModal({
   data,
@@ -31,7 +32,7 @@ export default function StockCellModal({
   const [currentReady, setCurrentReady] = useState(isReady);
   const [notes, setNotes] = useState(item?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewLightbox, setPreviewLightbox] = useState(null);
 
   // Swipe / Drag down to dismiss state
   const [dragY, setDragY] = useState(0);
@@ -312,7 +313,13 @@ export default function StockCellModal({
                     return (
                       <div
                         key={photo.id}
-                        onClick={() => setSelectedImage(displayUrl)}
+                        onClick={() => {
+                          const urls = parsePhotoUrls(photo.photo_url);
+                          setPreviewLightbox({
+                            photos: urls.length > 0 ? urls : [displayUrl],
+                            activeIndex: 0,
+                          });
+                        }}
                         className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] cursor-pointer group bg-slate-100 dark:bg-[#2A2A2A]"
                       >
                         <img src={displayUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -361,33 +368,16 @@ export default function StockCellModal({
         </div>
       </div>
 
-      {/* Lightbox Preview */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-backdrop"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            zIndex: 10000,
-            margin: 0,
-          }}
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-2xl w-full">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-10 right-0 text-white/80 hover:text-white p-1"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img src={selectedImage} alt="" className="w-full max-h-[80vh] object-contain rounded-2xl" />
-          </div>
-        </div>
+      {/* Lightbox Preview with Zoom Support */}
+      {previewLightbox && (
+        <LightboxModal
+          photos={previewLightbox.photos}
+          activeIndex={previewLightbox.activeIndex}
+          onClose={() => setPreviewLightbox(null)}
+          onIndexChange={(idx) =>
+            setPreviewLightbox((prev) => (prev ? { ...prev, activeIndex: idx } : null))
+          }
+        />
       )}
     </div>
   );
