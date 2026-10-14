@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { X, Shield, UserCheck, ShieldAlert, KeyRound, Check, ArrowRight } from 'lucide-react';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 export default function RoleSwitchModal({ onClose }) {
+  useLockBodyScroll(true);
   const { user, availableUsers, switchRole, loginWithPin } = useAuth();
   const [selectedRole, setSelectedRole] = useState(user?.role || 'teknisi');
   const [pin, setPin] = useState('');
@@ -77,8 +79,14 @@ export default function RoleSwitchModal({ onClose }) {
   const activeRoleObj = roles.find((r) => r.id === selectedRole);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4">
-      <div className="w-full max-w-md bg-white dark:bg-[#1E1E1E] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-[#444444] overflow-hidden animate-in slide-in-from-bottom-4">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-xs p-0 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-white dark:bg-[#1E1E1E] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-[#444444] overflow-hidden animate-in slide-in-from-bottom-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="p-4 bg-slate-900 dark:bg-[#121212] text-white dark:text-[#E0E0E0] border-b border-transparent dark:border-[#444444] flex items-center justify-between">
           <div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -13,6 +13,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { parsePhotoUrls } from '../utils/photoUtils';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 export default function StockCellModal({
   data,
@@ -32,14 +33,63 @@ export default function StockCellModal({
   const [isSaving, setIsSaving] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Lock body scroll while modal is open
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, []);
+  // Swipe / Drag down to dismiss state
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartY = useRef(0);
+  const currentDragY = useRef(0);
+  const backdropTouchStartY = useRef(0);
+
+  // Lock body scroll while modal is open (iOS & Android safe)
+  useLockBodyScroll(true);
+
+  // Handle drag down on modal header / handle
+  const handleDragTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartY.current = e.touches[0].clientY;
+    currentDragY.current = 0;
+    setIsDragging(true);
+  };
+
+  const handleDragTouchMove = (e) => {
+    if (!isDragging) return;
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+    if (deltaY > 0) {
+      if (e.cancelable) e.preventDefault();
+      currentDragY.current = deltaY;
+      setDragY(deltaY);
+    } else {
+      currentDragY.current = 0;
+      setDragY(0);
+    }
+  };
+
+  const handleDragTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (currentDragY.current > 70) {
+      onClose();
+    }
+    setDragY(0);
+    currentDragY.current = 0;
+  };
+
+  // Handle backdrop touch gestures
+  const handleBackdropTouchStart = (e) => {
+    if (e.target === e.currentTarget && e.touches.length === 1) {
+      backdropTouchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleBackdropTouchEnd = (e) => {
+    if (e.target === e.currentTarget && e.changedTouches.length === 1) {
+      const deltaY = e.changedTouches[0].clientY - backdropTouchStartY.current;
+      // If tapped or dragged down on backdrop, dismiss
+      if (Math.abs(deltaY) < 15 || deltaY > 30) {
+        onClose();
+      }
+    }
+  };
 
   // Filter installation photos for this specific variant
   const variantPhotos = installationPhotos.filter(
@@ -75,15 +125,45 @@ export default function StockCellModal({
         height: '100vh',
         zIndex: 9999,
         margin: 0,
+        touchAction: 'none',
+        overscrollBehavior: 'none',
+      }}
+      onClick={onClose}
+      onTouchStart={handleBackdropTouchStart}
+      onTouchEnd={handleBackdropTouchEnd}
+      onTouchMove={(e) => {
+        if (e.cancelable) e.preventDefault();
       }}
     >
-      <div className="w-full max-w-lg bg-white dark:bg-[#1E1E1E] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-[#444444] overflow-hidden animate-bottom-sheet max-h-[92vh] flex flex-col">
+      <div
+        className="w-full max-w-lg bg-white dark:bg-[#1E1E1E] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-[#444444] overflow-hidden animate-bottom-sheet max-h-[92vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        style={{
+          touchAction: 'auto',
+          overscrollBehavior: 'contain',
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
         {/* Mobile Swipe / Drag Handle Indicator */}
-        <div className="w-12 h-1.5 bg-slate-300 dark:bg-[#333333] rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+        <div
+          className="w-full pt-3 pb-2 sm:hidden shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+          onTouchStart={handleDragTouchStart}
+          onTouchMove={handleDragTouchMove}
+          onTouchEnd={handleDragTouchEnd}
+        >
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-[#444444] rounded-full" />
+        </div>
 
         {/* Header */}
-        <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-[#444444] bg-white dark:bg-[#1E1E1E] shrink-0">
-          <div className="flex items-center space-x-3">
+        <div
+          className="px-5 py-3.5 flex items-center justify-between border-b border-slate-100 dark:border-[#444444] bg-white dark:bg-[#1E1E1E] shrink-0 touch-none select-none"
+          onTouchStart={handleDragTouchStart}
+          onTouchMove={handleDragTouchMove}
+          onTouchEnd={handleDragTouchEnd}
+        >
+          <div className="flex items-center space-x-3 pointer-events-none">
             {!isTeknisi && color.hex_code && color.hex_code !== '#cbd5e1' && (
               <div
                 className="w-9 h-9 rounded-xl border-2 border-white/60 dark:border-[#444444] shadow-xs shrink-0 ring-1 ring-slate-200 dark:ring-[#444444]"
@@ -108,6 +188,7 @@ export default function StockCellModal({
 
           <button
             onClick={onClose}
+            onTouchStart={(e) => e.stopPropagation()}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-[#E0E0E0] p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-[#333333] transition-colors active-press"
           >
             <X className="w-5 h-5" />

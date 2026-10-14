@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 export default function LightboxModal({ photos = [], activeIndex = 0, onClose, onIndexChange }) {
   const [currentIdx, setCurrentIdx] = useState(activeIndex);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
 
-  // Lock body scroll when lightbox is open
-  useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, []);
+  // Lock body scroll when lightbox is open (iOS & Android safe)
+  useLockBodyScroll(true);
 
   const activePhotoList = Array.isArray(photos) && photos.length > 0 ? photos : [];
   const currentUrl = activePhotoList[currentIdx] || activePhotoList[0] || '';
@@ -74,8 +69,13 @@ export default function LightboxModal({ photos = [], activeIndex = 0, onClose, o
         height: '100vh',
         zIndex: 9999,
         margin: 0,
+        touchAction: 'none',
+        overscrollBehavior: 'none',
       }}
       onClick={onClose}
+      onTouchMove={(e) => {
+        if (e.target === e.currentTarget && e.cancelable) e.preventDefault();
+      }}
     >
       <div className="relative max-w-3xl w-full flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <button

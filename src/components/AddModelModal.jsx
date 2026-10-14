@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Camera, LayoutGrid, Plus, Image as ImageIcon } from 'lucide-react';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 export default function AddModelModal({ onClose, onSubmit }) {
+  useLockBodyScroll(true);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Gorden Utama');
   const [notes, setNotes] = useState('');
@@ -76,8 +78,14 @@ export default function AddModelModal({ onClose, onSubmit }) {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-backdrop">
-      <div className="w-full max-w-lg bg-white dark:bg-[#1E1E1E] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-[#444444] overflow-hidden animate-bottom-sheet max-h-[92vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4 animate-backdrop"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg bg-white dark:bg-[#1E1E1E] rounded-t-[28px] sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200/80 dark:border-[#444444] overflow-hidden animate-bottom-sheet max-h-[92vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Mobile Swipe / Drag Handle Indicator */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-[#333333] rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
 

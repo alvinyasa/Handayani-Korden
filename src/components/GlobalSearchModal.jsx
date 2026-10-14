@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Table, LayoutGrid, Image as ImageIcon, Check, ChevronRight } from 'lucide-react';
 import { searchAll } from '../services/api';
+import { useLockBodyScroll } from '../utils/useLockBodyScroll';
 
 export default function GlobalSearchModal({
   onClose,
@@ -8,6 +9,7 @@ export default function GlobalSearchModal({
   onSelectModel,
   onSelectPhoto,
 }) {
+  useLockBodyScroll(true);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ catalogs: [], models: [], photos: [] });
   const [loading, setLoading] = useState(false);
@@ -39,8 +41,14 @@ export default function GlobalSearchModal({
     results.catalogs.length + results.models.length + results.photos.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-xs p-3 pt-6 sm:pt-16">
-      <div className="w-full max-w-md bg-white dark:bg-[#1E1E1E] rounded-3xl shadow-2xl border border-slate-200 dark:border-[#444444] overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-top-4">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-xs p-3 pt-6 sm:pt-16"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-white dark:bg-[#1E1E1E] rounded-3xl shadow-2xl border border-slate-200 dark:border-[#444444] overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-top-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Search Input Bar */}
         <div className="p-3.5 bg-slate-900 dark:bg-[#121212] text-white dark:text-[#E0E0E0] border-b border-transparent dark:border-[#444444] flex items-center space-x-2">
           <Search className="w-5 h-5 text-slate-400 dark:text-[#888888] shrink-0" />
