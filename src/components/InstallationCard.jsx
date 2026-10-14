@@ -54,9 +54,9 @@ export default function InstallationCard({ photo, onDelete, onPreviewImage }) {
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
       <div>
-        {/* Image Preview Container (4:3 aspect ratio) */}
+        {/* Image Preview Container (3:4 aspect ratio) */}
         <div
-          className={`relative aspect-4/3 bg-slate-100 dark:bg-[#2A2A2A] overflow-hidden touch-pan-y ${
+          className={`relative aspect-[3/4] bg-slate-100 dark:bg-[#2A2A2A] overflow-hidden touch-pan-y ${
             photos.length > 1 ? 'cursor-grab select-none' : ''
           }`}
           onTouchStart={photos.length > 1 ? handleTouchStart : undefined}
