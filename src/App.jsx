@@ -54,15 +54,15 @@ function AppContent() {
   // Toast notification
   const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
 
-  const showToast = useCallback((message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success', duration = 3500) => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
+    setTimeout(() => setToast(null), duration);
   }, []);
 
   // Handle session timeout notification
   useEffect(() => {
     if (sessionExpiredToast) {
-      showToast('Sesi Admin telah berakhir (25 menit). Silakan login kembali.', 'error');
+      showToast('Sesi Admin telah berakhir (25 menit). Mode beralih kembali ke Teknisi.', 'error', 5500);
       clearSessionExpiredToast();
     }
   }, [sessionExpiredToast, clearSessionExpiredToast, showToast]);
@@ -472,20 +472,20 @@ function AppContent() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-3 max-w-sm w-[90%] pointer-events-none">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[10000] animate-in slide-in-from-top-3 max-w-sm w-[90%] pointer-events-none">
           <div
-            className={`p-3 rounded-2xl shadow-xl flex items-center space-x-2.5 text-xs font-bold border backdrop-blur-md ${
+            className={`p-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 text-xs font-bold border backdrop-blur-md ${
               toast.type === 'error'
-                ? 'bg-rose-900/90 text-white border-rose-700 shadow-rose-900/20'
-                : 'bg-slate-900/90 text-white border-slate-700 shadow-slate-900/30'
+                ? 'bg-rose-950/95 text-white border-rose-600/80 shadow-rose-950/50 ring-1 ring-rose-500/40'
+                : 'bg-slate-900/95 text-white border-slate-700 shadow-slate-900/40'
             }`}
           >
             {toast.type === 'error' ? (
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
             ) : (
-              <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
             )}
-            <span className="flex-1">{toast.message}</span>
+            <span className="flex-1 leading-snug">{toast.message}</span>
           </div>
         </div>
       )}

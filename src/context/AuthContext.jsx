@@ -12,7 +12,22 @@ const DEFAULT_TEKNISI = {
 };
 
 export function AuthProvider({ children }) {
-  const [sessionExpiredToast, setSessionExpiredToast] = useState(false);
+  // Check on initial load if an admin session existed and had expired
+  const [sessionExpiredToast, setSessionExpiredToast] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.role === 'admin' || parsed.username === 'manyu')) {
+          const lastActive = parsed.lastActive || parsed.loginTimestamp || 0;
+          if (Date.now() - lastActive >= ADMIN_SESSION_TIMEOUT_MS) {
+            return true;
+          }
+        }
+      }
+    } catch (_) {}
+    return false;
+  });
 
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
@@ -21,10 +36,11 @@ export function AuthProvider({ children }) {
         const parsed = JSON.parse(saved);
         if (parsed && (parsed.role === 'admin' || parsed.username === 'manyu')) {
           const lastActive = parsed.lastActive || parsed.loginTimestamp || Date.now();
-          // Check if session has already expired
+          // Check if session is still valid
           if (Date.now() - lastActive < ADMIN_SESSION_TIMEOUT_MS) {
             return { ...parsed, lastActive };
           } else {
+            // Already expired
             localStorage.removeItem(ADMIN_STORAGE_KEY);
           }
         }
@@ -73,8 +89,8 @@ export function AuthProvider({ children }) {
     const isAdminUser = user?.role === 'admin' || user?.username === 'manyu';
     if (!isAdminUser) return;
 
-    // Periodically check session expiration
-    const checkInterval = setInterval(() => {
+    // Routine to verify session validity
+    const checkExpiration = () => {
       const saved = localStorage.getItem(ADMIN_STORAGE_KEY);
       if (saved) {
         try {
@@ -83,19 +99,44 @@ export function AuthProvider({ children }) {
             const idleTime = Date.now() - parsed.lastActive;
             if (idleTime >= ADMIN_SESSION_TIMEOUT_MS) {
               logout(true);
+              return true;
             }
           }
         } catch (e) {
           logout(true);
+          return true;
         }
       } else {
         logout(false);
+        return true;
       }
-    }, 5000);
+      return false;
+    };
+
+    // Periodically check session expiration every 5 seconds
+    const checkInterval = setInterval(checkExpiration, 5000);
+
+    // Immediate check when tab becomes active / visible (e.g. returning to browser or switching apps on mobile)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkExpiration();
+      }
+    };
+    const handleFocus = () => {
+      checkExpiration();
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handleFocus);
 
     // User activity listeners to refresh lastActive
     let lastSaveTime = Date.now();
     const handleUserActivity = () => {
+      // First verify session is not already expired
+      const expired = checkExpiration();
+      if (expired) return;
+
       const now = Date.now();
       // Throttle localStorage updates to once every 10 seconds
       if (now - lastSaveTime > 10000) {
@@ -116,6 +157,9 @@ export function AuthProvider({ children }) {
 
     return () => {
       clearInterval(checkInterval);
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handleFocus);
       activityEvents.forEach((evt) =>
         window.removeEventListener(evt, handleUserActivity)
       );
