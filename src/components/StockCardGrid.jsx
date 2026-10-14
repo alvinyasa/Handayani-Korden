@@ -199,12 +199,12 @@ export default function StockCardGrid({
       </div>
 
       {/* 2. Horizontal Catalog Filter Chips with PC Scroll buttons & Mouse Wheel */}
-      <div className="relative flex items-center">
+      <div className="flex items-center gap-1.5">
         {/* Left Arrow (Desktop / PC) */}
         <button
           type="button"
           onClick={() => scrollChips('left')}
-          className="hidden sm:flex absolute left-0 z-10 w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] -translate-x-1.5 transition-all active:scale-95 shrink-0"
+          className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] transition-all active:scale-95 shrink-0"
           title="Geser katalog ke kiri"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -218,7 +218,7 @@ export default function StockCardGrid({
               e.currentTarget.scrollLeft += e.deltaY;
             }
           }}
-          className="flex items-center space-x-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs scroll-smooth flex-1 px-1 sm:px-6"
+          className="flex items-center space-x-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar text-xs scroll-smooth flex-1 min-w-0 px-1"
         >
           <div className="flex items-center space-x-1 text-slate-500 dark:text-[#888888] font-bold px-1 shrink-0">
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 dark:text-[#888888]" />
@@ -260,7 +260,7 @@ export default function StockCardGrid({
         <button
           type="button"
           onClick={() => scrollChips('right')}
-          className="hidden sm:flex absolute right-0 z-10 w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] translate-x-1.5 transition-all active:scale-95 shrink-0"
+          className="hidden sm:flex w-7 h-7 rounded-full bg-white dark:bg-[#2A2A2A] shadow-md border border-slate-200 dark:border-[#444444] items-center justify-center text-slate-600 dark:text-[#E0E0E0] hover:text-[#d96b27] hover:border-[#d96b27] transition-all active:scale-95 shrink-0"
           title="Geser katalog ke kanan"
         >
           <ChevronRight className="w-4 h-4" />
