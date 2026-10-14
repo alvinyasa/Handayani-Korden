@@ -52,7 +52,7 @@ export default function InstallationCard({ photo, onDelete, onPreviewImage }) {
   };
 
   return (
-    <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+    <div className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
       <div>
         {/* Image Preview Container (4:3 aspect ratio) */}
         <div

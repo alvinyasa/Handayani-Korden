@@ -29,6 +29,27 @@
   .dark hr {
     border-color: #444444;
   }
+
+  /* Balanced, even shadows for Dark Mode */
+  .dark .shadow-xs {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  }
+  .dark .shadow-sm {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  }
+  .dark .shadow,
+  .dark .shadow-md {
+    box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.55), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  }
+  .dark .shadow-lg {
+    box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.65), 0 4px 6px -4px rgba(0, 0, 0, 0.45);
+  }
+  .dark .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.75), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  }
+  .dark .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+  }
 }
 
 /* Custom smooth scrollbar for Excel table */

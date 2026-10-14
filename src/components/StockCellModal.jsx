@@ -61,10 +61,12 @@ export default function StockCellModal({
         {/* Header */}
         <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100 dark:border-[#444444] bg-white dark:bg-[#1E1E1E] shrink-0">
           <div className="flex items-center space-x-3">
-            <div
-              className="w-9 h-9 rounded-xl border-2 border-white/60 dark:border-[#444444] shadow-xs shrink-0 ring-1 ring-slate-200 dark:ring-[#444444]"
-              style={{ backgroundColor: color.hex_code || '#cbd5e1' }}
-            />
+            {!isTeknisi && color.hex_code && color.hex_code !== '#cbd5e1' && (
+              <div
+                className="w-9 h-9 rounded-xl border-2 border-white/60 dark:border-[#444444] shadow-xs shrink-0 ring-1 ring-slate-200 dark:ring-[#444444]"
+                style={{ backgroundColor: color.hex_code }}
+              />
+            )}
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="text-xs font-black text-[#d96b27] dark:text-orange-400 uppercase tracking-wider">
@@ -75,7 +77,7 @@ export default function StockCellModal({
                   Motif {motif.code} - {color.code}
                 </span>
               </div>
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-[#E0E0E0] truncate max-w-[250px]">
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-[#E0E0E0] truncate max-w-[280px]">
                 {motif.name || `Motif ${motif.code}`} ({color.name || `Warna ${color.code}`})
               </h3>
             </div>
@@ -167,17 +169,17 @@ export default function StockCellModal({
             )}
           </div>
 
-          {/* Linked Photos */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1.5">
-                <ImageIcon className="w-4 h-4 text-slate-500 dark:text-[#888888]" />
-                <h4 className="text-xs font-bold text-slate-700 dark:text-[#B0B0B0] uppercase tracking-wider">
-                  Foto Pemasangan Varian Ini ({variantPhotos.length})
-                </h4>
-              </div>
+          {/* Linked Photos (Hanya untuk Admin / Bukan Teknisi) */}
+          {!isTeknisi && canEdit && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5">
+                  <ImageIcon className="w-4 h-4 text-slate-500 dark:text-[#888888]" />
+                  <h4 className="text-xs font-bold text-slate-700 dark:text-[#B0B0B0] uppercase tracking-wider">
+                    Foto Pemasangan Varian Ini ({variantPhotos.length})
+                  </h4>
+                </div>
 
-              {canEdit && (
                 <button
                   type="button"
                   onClick={() => {
@@ -194,41 +196,41 @@ export default function StockCellModal({
                   <Plus className="w-3.5 h-3.5" />
                   <span>Upload Foto</span>
                 </button>
+              </div>
+
+              {variantPhotos.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {variantPhotos.map((photo) => {
+                    const urls = parsePhotoUrls(photo.photo_url);
+                    const displayUrl = urls[0] || photo.photo_url;
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => setSelectedImage(displayUrl)}
+                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] cursor-pointer group bg-slate-100 dark:bg-[#2A2A2A]"
+                      >
+                        <img src={displayUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        {urls.length > 1 && (
+                          <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-white shadow-xs">
+                            {urls.length} Foto
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Maximize2 className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-[#444444] bg-slate-50/50 dark:bg-[#2A2A2A]/40 text-center">
+                  <p className="text-[11px] text-slate-400 dark:text-[#888888] font-medium">
+                    Belum ada foto terpasang untuk varian motif {motif.code} warna {color.code}.
+                  </p>
+                </div>
               )}
             </div>
-
-            {variantPhotos.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {variantPhotos.map((photo) => {
-                  const urls = parsePhotoUrls(photo.photo_url);
-                  const displayUrl = urls[0] || photo.photo_url;
-                  return (
-                    <div
-                      key={photo.id}
-                      onClick={() => setSelectedImage(displayUrl)}
-                      className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-[#444444] cursor-pointer group bg-slate-100 dark:bg-[#2A2A2A]"
-                    >
-                      <img src={displayUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      {urls.length > 1 && (
-                        <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-[9px] font-bold text-white shadow-xs">
-                          {urls.length} Foto
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Maximize2 className="w-4 h-4 text-white" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-[#444444] bg-slate-50/50 dark:bg-[#2A2A2A]/40 text-center">
-                <p className="text-[11px] text-slate-400 dark:text-[#888888] font-medium">
-                  Belum ada foto terpasang untuk varian motif {motif.code} warna {color.code}.
-                </p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Footer Actions */}

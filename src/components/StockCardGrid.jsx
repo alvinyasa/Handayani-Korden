@@ -303,7 +303,7 @@ export default function StockCardGrid({
           return (
             <div
               key={catalog.id}
-              className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] shadow-xs overflow-hidden flex flex-col hover:shadow-md transition-all"
+              className="bg-white dark:bg-[#1E1E1E] rounded-2xl border border-slate-200/90 dark:border-[#444444] shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col"
             >
               {/* Card Header (Terracotta Orange) */}
               <div className="bg-[#d96b27] px-3.5 py-2.5 text-white flex items-center justify-between">
