@@ -409,7 +409,7 @@ function AppContent() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-5">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-5 overflow-x-hidden">
         {activeTab === 'stock' && (
           <StockPage
             catalogs={catalogs}

@@ -91,9 +91,28 @@ export default function StockCardGrid({
         }
       }
 
+      // 3. Status filter check at catalog level
+      if (statusFilter !== 'Semua') {
+        const motifs = cat.motifs || [];
+        const colors = cat.colors || [];
+        const matrix = cat.stockMatrix || {};
+        let catReady = 0;
+        let catTotal = 0;
+        motifs.forEach((m) => {
+          colors.forEach((c) => {
+            catTotal++;
+            const itm = matrix[m.id]?.[c.id];
+            if (itm && Number(itm.is_ready) === 1) catReady++;
+          });
+        });
+
+        if (statusFilter === 'Ready' && catReady === 0) return false;
+        if (statusFilter === 'Kosong' && catReady === catTotal) return false;
+      }
+
       return true;
     });
-  }, [catalogs, selectedCatalogFilter, searchQuery]);
+  }, [catalogs, selectedCatalogFilter, searchQuery, statusFilter]);
 
   const handleToggleClick = (e, cat, motif, color, item) => {
     e.stopPropagation();
@@ -120,9 +139,9 @@ export default function StockCardGrid({
   return (
     <div className="space-y-3.5 pb-6">
       {/* 1. Top Search Bar, Stat Pills & Tambah Katalog */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full max-w-full">
         {/* Search Bar Input */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="w-4 h-4 text-slate-400 dark:text-[#888888] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -142,11 +161,11 @@ export default function StockCardGrid({
         </div>
 
         {/* Stat Filter Badges + Tambah Katalog */}
-        <div className="flex items-center space-x-1.5 shrink-0 self-start sm:self-auto overflow-x-auto no-scrollbar">
+        <div className="w-full sm:w-auto max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 py-0.5 shrink-0">
           {/* Semua */}
           <button
             onClick={() => setStatusFilter('Semua')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 shrink-0 whitespace-nowrap ${
               statusFilter === 'Semua'
                 ? 'bg-slate-900 dark:bg-[#E0E0E0] text-white dark:text-[#121212] shadow-sm'
                 : 'bg-white dark:bg-[#1E1E1E] text-slate-700 dark:text-[#B0B0B0] border border-slate-200 dark:border-[#444444] hover:bg-slate-50 dark:hover:bg-[#333333]'
@@ -159,7 +178,7 @@ export default function StockCardGrid({
           {/* Ready */}
           <button
             onClick={() => setStatusFilter(statusFilter === 'Ready' ? 'Semua' : 'Ready')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 shrink-0 whitespace-nowrap ${
               statusFilter === 'Ready'
                 ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20'
                 : 'bg-white dark:bg-[#1E1E1E] text-emerald-700 dark:text-emerald-400 border border-emerald-500/50 dark:border-emerald-600/40 hover:bg-emerald-50 dark:hover:bg-[#333333]'
@@ -173,7 +192,7 @@ export default function StockCardGrid({
           {/* Kosong */}
           <button
             onClick={() => setStatusFilter(statusFilter === 'Kosong' ? 'Semua' : 'Kosong')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center space-x-1 shrink-0 whitespace-nowrap ${
               statusFilter === 'Kosong'
                 ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/20'
                 : 'bg-white dark:bg-[#1E1E1E] text-rose-600 dark:text-rose-400 border border-rose-400/60 dark:border-rose-600/40 hover:bg-rose-50 dark:hover:bg-[#333333]'
@@ -309,9 +328,14 @@ export default function StockCardGrid({
               <div className="bg-[#d96b27] px-3.5 py-2.5 text-white flex items-center justify-between">
                 {/* Catalog Name Full on top, Subtitle/Catatan underneath */}
                 <div className="min-w-0 pr-2 flex-1">
-                  <h3 className="font-black text-sm sm:text-base uppercase tracking-wide truncate leading-tight">
-                    {catalog.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-black text-sm sm:text-base uppercase tracking-wide truncate leading-tight">
+                      {catalog.name}
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/20 text-white shrink-0">
+                      {catReady}/{catTotal} Ready
+                    </span>
+                  </div>
                   {(catalog.subtitle || catalog.description) && (
                     <p className="text-[11px] font-normal text-white/90 truncate mt-0.5 leading-snug">
                       {catalog.subtitle || catalog.description}
@@ -351,6 +375,50 @@ export default function StockCardGrid({
                   const motifA = pair[0];
                   const motifB = pair[1];
 
+                  // Prepare row items based on statusFilter
+                  let rowData = [];
+                  if (statusFilter === 'Semua') {
+                    rowData = colors.map((c) => ({
+                      colorA: c,
+                      itemA: motifA ? matrix[motifA.id]?.[c.id] : null,
+                      colorB: motifB ? c : null,
+                      itemB: motifB ? matrix[motifB.id]?.[c.id] : null,
+                    }));
+                  } else {
+                    // Filter matching colors for motifA and motifB
+                    const matchA = motifA
+                      ? colors
+                          .map((c) => ({ color: c, item: matrix[motifA.id]?.[c.id] }))
+                          .filter((x) => {
+                            const isReady = x.item ? Number(x.item.is_ready) === 1 : false;
+                            return statusFilter === 'Ready' ? isReady : !isReady;
+                          })
+                      : [];
+
+                    const matchB = motifB
+                      ? colors
+                          .map((c) => ({ color: c, item: matrix[motifB.id]?.[c.id] }))
+                          .filter((x) => {
+                            const isReady = x.item ? Number(x.item.is_ready) === 1 : false;
+                            return statusFilter === 'Ready' ? isReady : !isReady;
+                          })
+                      : [];
+
+                    const maxRows = Math.max(matchA.length, matchB.length);
+                    if (maxRows === 0) return null; // Hide this pair if neither motif has matching variants
+
+                    for (let i = 0; i < maxRows; i++) {
+                      rowData.push({
+                        colorA: matchA[i]?.color || null,
+                        itemA: matchA[i]?.item || null,
+                        colorB: matchB[i]?.color || null,
+                        itemB: matchB[i]?.item || null,
+                      });
+                    }
+                  }
+
+                  if (rowData.length === 0) return null;
+
                   return (
                     <div key={pairIdx} className="w-full">
                       {/* Sub-header Row */}
@@ -374,126 +442,148 @@ export default function StockCardGrid({
 
                       {/* Rows for each color index */}
                       <div className="divide-y divide-slate-100 dark:divide-[#444444]">
-                        {colors.map((color) => {
-                          const itemA = motifA ? matrix[motifA.id]?.[color.id] : null;
+                        {rowData.map((row, rowIdx) => {
+                          const { colorA, itemA, colorB, itemB } = row;
                           const isReadyA = itemA ? Number(itemA.is_ready) === 1 : false;
-
-                          const itemB = motifB ? matrix[motifB.id]?.[color.id] : null;
                           const isReadyB = itemB ? Number(itemB.is_ready) === 1 : false;
 
                           return motifB ? (
                             <div
-                              key={color.id}
+                              key={colorA?.id || colorB?.id || rowIdx}
                               className="grid grid-cols-4 items-center py-1.5 px-2 text-center text-xs hover:bg-slate-50/70 dark:hover:bg-[#333333] transition-colors"
                             >
                               {/* Motif A: Color Number */}
-                              <div
-                                onClick={() =>
-                                  onSelectCell({
-                                    catalog,
-                                    motif: motifA,
-                                    color,
-                                    item: itemA,
-                                  })
-                                }
-                                className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
-                              >
-                                {color.code}
-                              </div>
+                              {colorA ? (
+                                <div
+                                  onClick={() =>
+                                    onSelectCell({
+                                      catalog,
+                                      motif: motifA,
+                                      color: colorA,
+                                      item: itemA,
+                                    })
+                                  }
+                                  className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
+                                >
+                                  {colorA.code}
+                                </div>
+                              ) : (
+                                <div className="text-slate-300 dark:text-[#555555] font-mono text-xs">-</div>
+                              )}
 
                               {/* Motif A: Status Capsule Button */}
                               <div className="flex justify-center px-1">
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleToggleClick(e, catalog, motifA, color, itemA)}
-                                  className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
-                                    isReadyA
-                                      ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
-                                      : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
-                                  }`}
-                                  title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
-                                >
-                                  {isReadyA ? (
-                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                  ) : (
-                                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                                  )}
-                                </button>
+                                {colorA ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleToggleClick(e, catalog, motifA, colorA, itemA)}
+                                    className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
+                                      isReadyA
+                                        ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
+                                        : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
+                                    }`}
+                                    title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
+                                  >
+                                    {isReadyA ? (
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                    ) : (
+                                      <X className="w-3.5 h-3.5 stroke-[3]" />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-300 dark:text-[#555555] text-xs">-</span>
+                                )}
                               </div>
 
                               {/* Motif B: Color Number */}
-                              <div
-                                onClick={() =>
-                                  onSelectCell({
-                                    catalog,
-                                    motif: motifB,
-                                    color,
-                                    item: itemB,
-                                  })
-                                }
-                                className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
-                              >
-                                {color.code}
-                              </div>
+                              {colorB ? (
+                                <div
+                                  onClick={() =>
+                                    onSelectCell({
+                                      catalog,
+                                      motif: motifB,
+                                      color: colorB,
+                                      item: itemB,
+                                    })
+                                  }
+                                  className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
+                                >
+                                  {colorB.code}
+                                </div>
+                              ) : (
+                                <div className="text-slate-300 dark:text-[#555555] font-mono text-xs">-</div>
+                              )}
 
                               {/* Motif B: Status Capsule Button */}
                               <div className="flex justify-center px-1">
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleToggleClick(e, catalog, motifB, color, itemB)}
-                                  className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
-                                    isReadyB
-                                      ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
-                                      : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
-                                  }`}
-                                  title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
-                                >
-                                  {isReadyB ? (
-                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                  ) : (
-                                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                                  )}
-                                </button>
+                                {colorB ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleToggleClick(e, catalog, motifB, colorB, itemB)}
+                                    className={`w-full max-w-[58px] py-1 px-2 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
+                                      isReadyB
+                                        ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
+                                        : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
+                                    }`}
+                                    title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
+                                  >
+                                    {isReadyB ? (
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                    ) : (
+                                      <X className="w-3.5 h-3.5 stroke-[3]" />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-300 dark:text-[#555555] text-xs">-</span>
+                                )}
                               </div>
                             </div>
                           ) : (
                             <div
-                              key={color.id}
+                              key={colorA?.id || rowIdx}
                               className="grid grid-cols-2 max-w-[280px] mx-auto items-center py-1.5 px-3 text-center text-xs hover:bg-slate-50/70 dark:hover:bg-[#333333] transition-colors"
                             >
                               {/* Single Motif: Centered Color Number */}
-                              <div
-                                onClick={() =>
-                                  onSelectCell({
-                                    catalog,
-                                    motif: motifA,
-                                    color,
-                                    item: itemA,
-                                  })
-                                }
-                                className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
-                              >
-                                {color.code}
-                              </div>
+                              {colorA ? (
+                                <div
+                                  onClick={() =>
+                                    onSelectCell({
+                                      catalog,
+                                      motif: motifA,
+                                      color: colorA,
+                                      item: itemA,
+                                    })
+                                  }
+                                  className="font-extrabold text-slate-800 dark:text-[#E0E0E0] font-mono text-xs cursor-pointer hover:text-[#d96b27] dark:hover:text-orange-400"
+                                >
+                                  {colorA.code}
+                                </div>
+                              ) : (
+                                <div className="text-slate-300 dark:text-[#555555] font-mono text-xs">-</div>
+                              )}
 
                               {/* Single Motif: Centered Status Capsule Button */}
                               <div className="flex justify-center px-1">
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleToggleClick(e, catalog, motifA, color, itemA)}
-                                  className={`w-full max-w-[64px] py-1 px-2.5 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
-                                    isReadyA
-                                      ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
-                                      : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
-                                  }`}
-                                  title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
-                                >
-                                  {isReadyA ? (
-                                    <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                  ) : (
-                                    <X className="w-3.5 h-3.5 stroke-[3]" />
-                                  )}
-                                </button>
+                                {colorA ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleToggleClick(e, catalog, motifA, colorA, itemA)}
+                                    className={`w-full max-w-[64px] py-1 px-2.5 rounded-full flex items-center justify-center font-bold text-xs shadow-xs transition-all active:scale-95 ${
+                                      isReadyA
+                                        ? 'bg-[#1c7446] hover:bg-[#166039] text-white'
+                                        : 'bg-[#a6343f] hover:bg-[#8f2832] text-white'
+                                    }`}
+                                    title={canEdit ? 'Klik untuk toggle status' : 'Klik untuk lihat detail'}
+                                  >
+                                    {isReadyA ? (
+                                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                    ) : (
+                                      <X className="w-3.5 h-3.5 stroke-[3]" />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-300 dark:text-[#555555] text-xs">-</span>
+                                )}
                               </div>
                             </div>
                           );
