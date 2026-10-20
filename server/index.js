@@ -20,13 +20,31 @@ app.use(express.urlencoded({ extended: true }));
 // ─── HELPER SUPABASE STORAGE ───────────────────────────────────────────────
 async function uploadToSupabaseStorage(file, folderPath) {
   if (!file) return null;
-  const fileExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase();
+  const rawExt = (file.originalname.split('.').pop() || 'jpg').toLowerCase();
+  
+  // Normalize contentType for Supabase Storage (must be standard image MIME)
+  let contentType = file.mimetype || 'image/jpeg';
+  let fileExt = rawExt;
+
+  if (contentType === 'image/heic' || contentType === 'image/heif' || rawExt === 'heic' || rawExt === 'heif') {
+    contentType = 'image/jpeg';
+    fileExt = 'jpg';
+  } else if (contentType === 'application/octet-stream' || !contentType.startsWith('image/')) {
+    if (rawExt === 'png') contentType = 'image/png';
+    else if (rawExt === 'webp') contentType = 'image/webp';
+    else if (rawExt === 'gif') contentType = 'image/gif';
+    else {
+      contentType = 'image/jpeg';
+      fileExt = 'jpg';
+    }
+  }
+
   const fileName = `${folderPath}/${Date.now()}-${Math.round(Math.random() * 1e9)}.${fileExt}`;
 
   const { error } = await supabase.storage
     .from('uploads')
     .upload(fileName, file.buffer, {
-      contentType: file.mimetype || 'image/jpeg',
+      contentType,
       upsert: true
     });
 
@@ -600,6 +618,16 @@ app.get('/api/search', async (req, res) => {
 
   const catalogs = await Promise.all((rawCatalogs || []).map(c => getCatalogFull(c.id)));
   res.json({ success: true, data: { catalogs, models: models || [], photos } });
+});
+
+// Error handling middleware (e.g. Multer or server errors)
+app.use((err, req, res, next) => {
+  console.error('Express Error Handler:', err);
+  const status = err.status || (err.name === 'MulterError' ? 400 : 500);
+  res.status(status).json({
+    success: false,
+    message: err.message || 'Terjadi kesalahan pada server saat memproses data/foto',
+  });
 });
 
 // Vercel routes all non-api requests to index.html natively.

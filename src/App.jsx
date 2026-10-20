@@ -307,16 +307,16 @@ function AppContent() {
   const handleCreateModel = async (formData) => {
     try {
       const res = await createModel(formData);
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setModels((prev) => [res.data, ...prev]);
         showToast('Model korden berhasil ditambahkan');
         const statsRes = await fetchStats();
-        if (statsRes.success) setStats(statsRes.data);
+        if (statsRes && statsRes.success) setStats(statsRes.data);
         return { success: true };
       }
-      return res;
+      return res || { success: false, message: 'Gagal mengupload model' };
     } catch (err) {
-      return { success: false, message: 'Gagal mengupload model' };
+      return { success: false, message: err.message || 'Gagal mengupload model' };
     }
   };
 
@@ -339,16 +339,16 @@ function AppContent() {
   const handleUploadInstallation = async (formData) => {
     try {
       const res = await createInstallation(formData);
-      if (res.success && res.data) {
+      if (res && res.success && res.data) {
         setInstallationPhotos((prev) => [res.data, ...prev]);
         showToast('Foto pemasangan berhasil diupload');
         const statsRes = await fetchStats();
-        if (statsRes.success) setStats(statsRes.data);
+        if (statsRes && statsRes.success) setStats(statsRes.data);
         return { success: true };
       }
-      return res;
+      return res || { success: false, message: 'Gagal mengupload foto pemasangan' };
     } catch (err) {
-      return { success: false, message: 'Gagal mengupload foto pemasangan' };
+      return { success: false, message: err.message || 'Gagal mengupload foto pemasangan' };
     }
   };
 

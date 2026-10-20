@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Camera, Image as ImageIcon, Plus } from 'lucide-react';
 import { useLockBodyScroll } from '../utils/useLockBodyScroll';
+import { compressImages } from '../utils/imageCompressor';
 
 export default function AddInstallationModal({
   existingCatalogs = [],
@@ -15,6 +16,7 @@ export default function AddInstallationModal({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
   const [error, setError] = useState('');
 
   const handleFilesChange = (e) => {
@@ -50,25 +52,40 @@ export default function AddInstallationModal({
     }
 
     setLoading(true);
+    setLoadingText('Mengompresi foto...');
     setError('');
 
-    const formData = new FormData();
-    formData.append('catalog_name', catalogName.trim());
-    formData.append('room_type', roomType);
-    formData.append('caption', caption.trim());
+    try {
+      // Compress photos client-side to ensure small payload (<400KB each) and standard JPEG
+      const compressedFiles = await compressImages(selectedFiles, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      });
 
-    // Append all selected photos
-    selectedFiles.forEach((f) => {
-      formData.append('photos', f);
-    });
+      setLoadingText('Mengupload foto pemasangan...');
 
-    const res = await onSubmit(formData);
-    setLoading(false);
+      const formData = new FormData();
+      formData.append('catalog_name', catalogName.trim());
+      formData.append('room_type', roomType);
+      formData.append('caption', caption.trim());
 
-    if (res && !res.success) {
-      setError(res.message || 'Gagal mengupload foto pemasangan');
-    } else {
-      onClose();
+      // Append all compressed photos
+      compressedFiles.forEach((f) => {
+        formData.append('photos', f);
+      });
+
+      const res = await onSubmit(formData);
+      setLoading(false);
+
+      if (res && !res.success) {
+        setError(res.message || 'Gagal mengupload foto pemasangan');
+      } else {
+        onClose();
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Terjadi kesalahan saat memproses foto');
     }
   };
 
@@ -260,7 +277,7 @@ export default function AddInstallationModal({
               disabled={loading || selectedFiles.length === 0}
               className="flex-1 py-3 px-4 rounded-xl bg-[#d96b27] hover:bg-[#c25a1d] text-white text-xs font-bold shadow-md shadow-orange-600/20 active-press disabled:opacity-50 transition-colors"
             >
-              {loading ? 'Menyimpan...' : `Simpan Foto (${selectedFiles.length} Foto)`}
+              {loading ? (loadingText || 'Menyimpan...') : `Simpan Foto (${selectedFiles.length} Foto)`}
             </button>
           </div>
         </form>

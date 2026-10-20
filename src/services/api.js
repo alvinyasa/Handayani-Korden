@@ -113,26 +113,47 @@ export async function fetchModels() {
 }
 
 export async function createModel(formData) {
-  const res = await fetch(`${API_BASE}/models`, {
-    method: 'POST',
-    body: formData,
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/models`, {
+      method: 'POST',
+      body: formData,
+    });
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      if (!res.ok && !data.message) {
+        data.message = `Gagal upload model (HTTP ${res.status})`;
+      }
+      return data;
+    } catch {
+      return { success: false, message: `Server error (${res.status}): ${text.slice(0, 120)}` };
+    }
+  } catch (err) {
+    return { success: false, message: err.message || 'Koneksi ke server terputus' };
+  }
 }
 
 export async function updateModel(id, formData) {
-  const res = await fetch(`${API_BASE}/models/${id}`, {
-    method: 'PUT',
-    body: formData,
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/models/${id}`, {
+      method: 'PUT',
+      body: formData,
+    });
+    return res.json();
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
 }
 
 export async function deleteModel(id) {
-  const res = await fetch(`${API_BASE}/models/${id}`, {
-    method: 'DELETE',
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/models/${id}`, {
+      method: 'DELETE',
+    });
+    return res.json();
+  } catch (err) {
+    return { success: false, message: err.message };
+  }
 }
 
 // Installation Photos
@@ -148,11 +169,24 @@ export async function fetchInstallations(filters = {}) {
 }
 
 export async function createInstallation(formData) {
-  const res = await fetch(`${API_BASE}/installations`, {
-    method: 'POST',
-    body: formData,
-  });
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/installations`, {
+      method: 'POST',
+      body: formData,
+    });
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      if (!res.ok && !data.message) {
+        data.message = `Gagal upload foto pemasangan (HTTP ${res.status})`;
+      }
+      return data;
+    } catch {
+      return { success: false, message: `Server error (${res.status}): ${text.slice(0, 120)}` };
+    }
+  } catch (err) {
+    return { success: false, message: err.message || 'Koneksi ke server terputus' };
+  }
 }
 
 export async function deleteInstallation(id) {
